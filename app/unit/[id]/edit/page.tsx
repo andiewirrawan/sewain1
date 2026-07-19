@@ -21,6 +21,10 @@ export default function EditUnitPage() {
     status_unit: 'Kosong'
   });
 
+  useEffect(() => {
+    fetchUnit();
+  }, [id]);
+
   const fetchUnit = async () => {
     try {
       const res = await fetch(`/api/unit/${id}`, {
@@ -43,13 +47,6 @@ export default function EditUnitPage() {
       setFetching(false);
     }
   };
-
-  useEffect(() => {
-    if (id) {
-      fetchUnit();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
