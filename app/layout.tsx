@@ -6,6 +6,8 @@ import Topbar from '@/components/Topbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'SEWAIN - Property Management System',
   description: 'Sistem Informasi Sewa Unit ERP Style',

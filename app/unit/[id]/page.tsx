@@ -9,7 +9,7 @@ import { formatRupiah } from '@/lib/format';
 export default function DetailUnitPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = params?.id as string;
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

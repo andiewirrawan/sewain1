@@ -8,7 +8,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 export default function EditUnitPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
+  const id = params?.id as string;
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -20,10 +20,6 @@ export default function EditUnitPage() {
     harga_sewa: '',
     status_unit: 'Kosong'
   });
-
-  useEffect(() => {
-    fetchUnit();
-  }, [id]);
 
   const fetchUnit = async () => {
     try {
@@ -47,6 +43,13 @@ export default function EditUnitPage() {
       setFetching(false);
     }
   };
+
+  useEffect(() => {
+    if (id) {
+      fetchUnit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
