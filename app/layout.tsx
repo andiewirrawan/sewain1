@@ -21,7 +21,7 @@ export default function RootLayout({
       <body suppressHydrationWarning className={inter.className}>
         <div className="flex min-h-screen bg-slate-50">
           <Sidebar />
-          <div className="flex-1 flex flex-col lg:pl-64 transition-all duration-300">
+          <div className="flex-1 flex flex-col lg:pl-60 transition-all duration-300">
             <Topbar />
             <main className="p-6 flex-1">
               {children}

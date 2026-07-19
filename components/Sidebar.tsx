@@ -38,17 +38,19 @@ export default function Sidebar() {
       </button>
 
       <aside className={cn(
-        "fixed left-0 top-0 h-screen bg-slate-900 text-slate-300 transition-all duration-300 z-40 flex flex-col",
-        isOpen ? "w-64" : "w-0 -translate-x-full lg:w-20 lg:translate-x-0"
+        "fixed left-0 top-0 h-screen bg-slate-900 text-slate-300 transition-all duration-300 z-40 flex flex-col border-r border-slate-800",
+        isOpen ? "w-60" : "w-0 -translate-x-full lg:w-20 lg:translate-x-0"
       )}>
-        <div className="h-16 flex items-center justify-center border-b border-slate-800">
-          <h1 className={cn("font-bold text-xl tracking-wider text-white", !isOpen && "lg:hidden")}>
-            SEWAIN
-          </h1>
-          {!isOpen && <span className="hidden lg:block font-bold text-xl text-white">S</span>}
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white shrink-0">S</div>
+            <span className={cn("text-xl font-bold tracking-tight text-white uppercase", !isOpen && "lg:hidden")}>
+              SEWAIN
+            </span>
+          </div>
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -57,14 +59,14 @@ export default function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group",
+                  "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
                   isActive 
-                    ? "bg-blue-600 text-white" 
-                    : "hover:bg-slate-800 hover:text-white"
+                    ? "bg-slate-800/50 text-blue-400" 
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/30"
                 )}
               >
-                <Icon size={20} className={cn(isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
-                <span className={cn("font-medium", !isOpen && "lg:hidden")}>
+                <Icon size={18} className={cn(isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
+                <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>
                   {item.name}
                 </span>
               </Link>
@@ -73,10 +75,13 @@ export default function Sidebar() {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <button className="flex items-center gap-3 px-3 py-2 w-full rounded-lg hover:bg-slate-800 hover:text-white transition-colors group text-slate-400">
-            <LogOut size={20} />
-            <span className={cn("font-medium", !isOpen && "lg:hidden")}>Logout</span>
-          </button>
+          <div className="flex items-center gap-3 px-3 py-2 text-slate-400">
+            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">AD</div>
+            <div className={cn("flex-1 overflow-hidden", !isOpen && "lg:hidden")}>
+              <p className="text-sm font-medium text-white truncate">Admin Utama</p>
+              <p className="text-xs truncate text-slate-500">admin@sewain.com</p>
+            </div>
+          </div>
         </div>
       </aside>
     </>
