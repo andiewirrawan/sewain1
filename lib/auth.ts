@@ -22,6 +22,11 @@ export function verifyToken(token: string): UserPayload | null {
   }
 }
 
+export function requireRole(user: UserPayload | null, roles: string[]): boolean {
+  if (!user) return false;
+  return roles.includes(user.role);
+}
+
 export function getUserFromRequest(req: NextRequest): UserPayload | null {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

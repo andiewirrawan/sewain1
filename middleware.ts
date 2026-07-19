@@ -4,20 +4,30 @@ import { verifyToken } from './lib/auth';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get('token')?.value;
 
-  // Proteksi /api/* kecuali /api/login
+  // 1. Abaikan login page dan assets
+  if (pathname === '/login' || pathname.startsWith('/_next') || pathname.includes('.')) {
+    return NextResponse.next();
+  }
+
+  // 2. Proteksi API
   if (pathname.startsWith('/api') && !pathname.startsWith('/api/login')) {
-    const authHeader = request.headers.get('authorization');
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
-
-    const token = authHeader.split(' ')[1];
     const user = verifyToken(token);
-
     if (!user) {
       return NextResponse.json({ message: 'Invalid or expired token' }, { status: 401 });
+    }
+  }
+
+  // 3. Proteksi Halaman (Non-API)
+  if (!pathname.startsWith('/api')) {
+    if (!token || !verifyToken(token)) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
     }
   }
 
@@ -25,5 +35,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

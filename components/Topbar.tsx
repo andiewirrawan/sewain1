@@ -4,6 +4,15 @@ import React from 'react';
 import { Bell, Search, User } from 'lucide-react';
 
 export default function Topbar() {
+  const [user, setUser] = React.useState<{ nama: string; role: string } | null>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
       <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-md w-full max-w-md">
@@ -25,8 +34,8 @@ export default function Topbar() {
 
         <div className="flex items-center gap-3 pl-2">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-semibold text-slate-900">Administrator</p>
-            <p className="text-xs text-slate-500">Owner</p>
+            <p className="text-sm font-semibold text-slate-900">{user?.nama || 'Administrator'}</p>
+            <p className="text-xs text-slate-500">{user?.role || 'Owner'}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 border border-slate-300">
             <User size={20} />
@@ -36,3 +45,4 @@ export default function Topbar() {
     </header>
   );
 }
+

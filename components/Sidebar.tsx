@@ -9,23 +9,43 @@ import {
   CreditCard, 
   LogOut,
   Menu,
-  X
+  X,
+  Settings,
+  PieChart
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Unit', href: '/unit', icon: Building2 },
-  { name: 'Penyewa', href: '/penyewa', icon: Users },
+  { name: 'Master Unit', href: '/unit', icon: Building2 },
+  { name: 'Master Penyewa', href: '/penyewa', icon: Users },
   { name: 'Kontrak', href: '/kontrak', icon: FileText },
   { name: 'Pembayaran', href: '/pembayaran', icon: CreditCard },
+  { name: 'Laporan', href: '/laporan', icon: PieChart },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(true);
+  const [user, setUser] = React.useState<{ nama: string; role: string } | null>(null);
+
+  React.useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <>
@@ -72,18 +92,46 @@ export default function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Menu Pengaturan khusus Owner */}
+          {user?.role === 'Owner' && (
+            <Link
+              href="/settings"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
+                pathname === '/settings' 
+                  ? "bg-slate-800/50 text-blue-400" 
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/30"
+              )}
+            >
+              <Settings size={18} className={cn(pathname === '/settings' ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
+              <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>
+                Pengaturan
+              </span>
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center gap-3 px-3 py-2 text-slate-400">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">AD</div>
+          <div className="flex items-center gap-3 px-3 py-2 text-slate-400 mb-2">
+            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+              {user?.nama?.substring(0, 2).toUpperCase() || '??'}
+            </div>
             <div className={cn("flex-1 overflow-hidden", !isOpen && "lg:hidden")}>
-              <p className="text-sm font-medium text-white truncate">Admin Utama</p>
-              <p className="text-xs truncate text-slate-500">admin@sewain.com</p>
+              <p className="text-sm font-medium text-white truncate">{user?.nama || 'Loading...'}</p>
+              <p className="text-xs truncate text-slate-500">{user?.role || 'User'}</p>
             </div>
           </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2 w-full rounded-md hover:bg-slate-800 hover:text-white transition-colors group text-slate-400"
+          >
+            <LogOut size={18} />
+            <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>Logout</span>
+          </button>
         </div>
       </aside>
     </>
   );
 }
+
