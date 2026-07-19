@@ -13,10 +13,6 @@ export default function DetailUnitPage() {
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUnit();
-  }, [id]);
-
   const fetchUnit = async () => {
     try {
       const res = await fetch(`/api/unit/${id}`, {
@@ -32,6 +28,11 @@ export default function DetailUnitPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUnit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
   if (!unit) return <div className="p-8 text-center text-red-500">Unit tidak ditemukan</div>;

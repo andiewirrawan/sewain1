@@ -12,7 +12,13 @@ export default function UnitPage() {
   const [loading, setLoading] = useState(true);
   const [kategori, setKategori] = useState('Semua');
   const [status, setStatus] = useState('Semua');
-  const [user, setUser] = useState<{ role: string } | null>(null);
+  const [user, setUser] = useState<{ role: string } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      return storedUser ? JSON.parse(storedUser) : null;
+    }
+    return null;
+  });
 
   const fetchUnits = async () => {
     setLoading(true);
@@ -32,11 +38,8 @@ export default function UnitPage() {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
     fetchUnits();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kategori, status]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {

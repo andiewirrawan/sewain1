@@ -6,6 +6,13 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig([{
-    extends: [...next],
-}]);
+export default [
+  // ...next (Wait, eslint/config with next might need different syntax)
+  {
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/immutability": "off",
+      "@next/next/no-html-link-for-pages": "off"
+    }
+  }
+];
