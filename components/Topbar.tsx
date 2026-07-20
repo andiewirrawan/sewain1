@@ -7,7 +7,7 @@ export default function Topbar() {
   const [user, setUser] = React.useState<{ nama: string; role: string } | null>(() => {
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user');
-      return storedUser ? JSON.parse(storedUser) : null;
+      try { return storedUser ? JSON.parse(storedUser) : null; } catch(e) { return null; }
     }
     return null;
   });
