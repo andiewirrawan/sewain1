@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Edit, Building2, User, History, Receipt, BarChart } from 'lucide-react';
+import { ArrowLeft, Edit, Building2, User, History, Receipt, BarChart, AlertCircle, Clock } from 'lucide-react';
 import { formatRupiah } from '@/lib/format';
 
 export default function DetailUnitPage() {
@@ -13,14 +13,26 @@ export default function DetailUnitPage() {
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [riwayat, setRiwayat] = useState<any>(null);
+
   const fetchUnit = async () => {
     try {
-      const res = await fetch(`/api/unit/${id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const [resUnit, resRiwayat] = await Promise.all([
+        fetch(`/api/unit/${id}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        }),
+        fetch(`/api/unit/${id}/riwayat`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+      ]);
+
+      if (resUnit.ok) {
+        const data = await resUnit.json();
         setUnit(data);
+      }
+      if (resRiwayat.ok) {
+        const data = await resRiwayat.json();
+        setRiwayat(data);
       }
     } catch (error) {
       console.error(error);
@@ -138,13 +150,33 @@ export default function DetailUnitPage() {
         {/* Kolom Kanan: Riwayat & Ringkasan */}
         <div className="lg:col-span-2 space-y-6">
           {/* 5. Ringkasan */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 flex items-center gap-6">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-              <BarChart size={24} />
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 grid grid-cols-3 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
+                <BarChart size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Lunas</p>
+                <p className="text-sm font-bold text-slate-900">{formatRupiah(riwayat?.summary?.total_pembayaran_lunas || 0)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800">Ringkasan Unit (Segera Hadir)</p>
-              <p className="text-xs text-slate-500 mt-1">Total pendapatan dan statistik unit akan ditampilkan di sini.</p>
+            <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
+              <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center text-rose-600 shrink-0">
+                <AlertCircle size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tunggakan</p>
+                <p className="text-sm font-bold text-slate-900">{riwayat?.summary?.jumlah_tunggakan || 0} Periode</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 shrink-0">
+                <Clock size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Lama Terisi</p>
+                <p className="text-sm font-bold text-slate-900">{riwayat?.summary?.total_lama_terisi_hari || 0} Hari</p>
+              </div>
             </div>
           </div>
 
@@ -154,8 +186,37 @@ export default function DetailUnitPage() {
               <History size={18} className="text-slate-400" />
               <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Riwayat Penyewa</h3>
             </div>
-            <div className="p-6 text-center">
-              <p className="text-sm text-slate-500">Belum ada riwayat penyewa sebelumnya.</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th className="px-5 py-3">Penyewa</th>
+                    <th className="px-5 py-3">Periode</th>
+                    <th className="px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {riwayat?.riwayat_kontrak?.length > 0 ? (
+                    riwayat.riwayat_kontrak.map((k: any) => (
+                      <tr key={k.id_kontrak} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-3 font-medium text-slate-900">{k.penyewa?.nama}</td>
+                        <td className="px-5 py-3 text-slate-600">{k.tanggal_masuk} s/d {k.tanggal_keluar || 'Sekarang'}</td>
+                        <td className="px-5 py-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            k.status_kontrak === 'Aktif' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {k.status_kontrak}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-5 py-8 text-center text-slate-400 italic">Belum ada riwayat penyewa</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -163,10 +224,39 @@ export default function DetailUnitPage() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
               <Receipt size={18} className="text-slate-400" />
-              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Riwayat Pembayaran Terakhir</h3>
+              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Riwayat Pembayaran Unit</h3>
             </div>
-            <div className="p-6 text-center">
-              <p className="text-sm text-slate-500">Belum ada transaksi pembayaran.</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th className="px-5 py-3">Periode</th>
+                    <th className="px-5 py-3">Nominal</th>
+                    <th className="px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {riwayat?.riwayat_pembayaran?.length > 0 ? (
+                    riwayat.riwayat_pembayaran.slice(0, 10).map((p: any) => (
+                      <tr key={p.id_pembayaran} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-3 font-medium text-slate-900">{p.periode}</td>
+                        <td className="px-5 py-3 text-slate-600">{formatRupiah(p.nominal)}</td>
+                        <td className="px-5 py-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            p.status_pembayaran === 'Lunas' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                          }`}>
+                            {p.status_pembayaran}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-5 py-8 text-center text-slate-400 italic">Belum ada riwayat pembayaran</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

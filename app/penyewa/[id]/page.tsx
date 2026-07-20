@@ -18,12 +18,23 @@ export default function DetailPenyewaPage() {
     }
   }, [id]);
 
+  const [riwayat, setRiwayat] = useState<any>(null);
+
   const fetchDetail = async () => {
     try {
-      const res = await fetch(`/api/penyewa/${id}`);
-      if (!res.ok) throw new Error('Gagal mengambil data penyewa');
-      const data = await res.json();
+      const [resPenyewa, resRiwayat] = await Promise.all([
+        fetch(`/api/penyewa/${id}`),
+        fetch(`/api/penyewa/${id}/riwayat`)
+      ]);
+
+      if (!resPenyewa.ok) throw new Error('Gagal mengambil data penyewa');
+      const data = await resPenyewa.json();
       setPenyewa(data);
+
+      if (resRiwayat.ok) {
+        const riwayatData = await resRiwayat.json();
+        setRiwayat(riwayatData);
+      }
     } catch (error) {
       console.error(error);
       alert('Data tidak ditemukan');
@@ -114,6 +125,25 @@ export default function DetailPenyewaPage() {
 
         {/* Sections on the Right */}
         <div className="md:col-span-2 space-y-6">
+          {/* 5. Ringkasan */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Ringkasan Penyewa</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Bayar</p>
+                <p className="text-sm font-bold text-gray-900">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(riwayat?.summary?.total_pembayaran || 0)}</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Tunggakan</p>
+                <p className="text-sm font-bold text-red-600">{riwayat?.summary?.jumlah_tunggakan || 0} Periode</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Lama Sewa</p>
+                <p className="text-sm font-bold text-blue-600">{riwayat?.summary?.total_lama_menyewa_hari || 0} Hari</p>
+              </div>
+            </div>
+          </div>
+
           {/* 2. Unit Aktif */}
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Unit Aktif</h3>
@@ -144,22 +174,74 @@ export default function DetailPenyewaPage() {
             )}
           </div>
 
-          {/* 3. Riwayat Unit (Kosong) */}
+          {/* 3. Riwayat Unit */}
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Riwayat Unit</h3>
-            <p className="text-sm text-gray-500 text-center py-4">Akan ditampilkan pada tahap selanjutnya.</p>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Unit</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Periode</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {riwayat?.riwayat_kontrak?.length > 0 ? (
+                    riwayat.riwayat_kontrak.map((k: any) => (
+                      <tr key={k.id_kontrak}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{k.unit?.kode_unit}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500">{k.tanggal_masuk} - {k.tanggal_keluar || 'Sekarang'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${k.status_kontrak === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {k.status_kontrak}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-center text-sm text-gray-400 italic">Belum ada riwayat unit</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* 4. Riwayat Pembayaran Penyewa (Kosong) */}
+          {/* 4. Riwayat Pembayaran Penyewa */}
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Riwayat Pembayaran</h3>
-            <p className="text-sm text-gray-500 text-center py-4">Akan ditampilkan pada tahap selanjutnya.</p>
-          </div>
-
-          {/* 5. Ringkasan (Kosong) */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Ringkasan</h3>
-            <p className="text-sm text-gray-500 text-center py-4">Akan ditampilkan pada tahap selanjutnya.</p>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Periode</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Unit</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {riwayat?.riwayat_pembayaran?.length > 0 ? (
+                    riwayat.riwayat_pembayaran.slice(0, 5).map((p: any) => (
+                      <tr key={p.id_pembayaran}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.periode}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{p.kontrak_sewa?.unit?.kode_unit}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${p.status_pembayaran === 'Lunas' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                            {p.status_pembayaran}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-4 text-center text-sm text-gray-400 italic">Belum ada transaksi pembayaran</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
