@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body suppressHydrationWarning className={inter.className}>
         <div className="flex min-h-screen bg-slate-50">
           <Sidebar />

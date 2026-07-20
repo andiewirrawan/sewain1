@@ -1,7 +1,1 @@
-{
-  "extends": "next/core-web-vitals",
-  "rules": {
-    "react-hooks/set-state-in-effect": "off",
-    "react-hooks/exhaustive-deps": "off"
-  }
-}
+{"extends": ["next/core-web-vitals"], "rules": {"@next/next/no-document-import-in-page": "off"}}
