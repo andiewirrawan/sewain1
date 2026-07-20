@@ -8,14 +8,21 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     fetch('/api/dashboard')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Gagal memuat dashboard');
+        return res.json();
+      })
       .then(setData)
+      .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
 
   const occupancyData = Object.entries(data?.occupancy_per_jenis || {}).map(([key, val]: any) => ({
     name: key,
