@@ -1,20 +1,18 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# SEWAIN
 
-# Run and deploy your AI Studio app
+Aplikasi manajemen sewa.
 
-This contains everything you need to run your app locally.
+## Langkah Setup
+1. Jalankan `sql/schema.sql` di Supabase SQL Editor.
+2. Isi `.env.local` berdasarkan `.env.local.example`.
+3. Jalankan `npm install`.
+4. Jalankan `npm run dev` untuk coba lokal.
 
-View your app in AI Studio: https://ai.studio/apps/697d481d-2440-4268-95cc-22f653fd8412
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Deploy ke Vercel
+1. `git init`, `git add .`, `git commit -m "Initial commit"`, `git push` ke GitHub.
+2. Import repository di Vercel.
+3. Tambahkan Environment Variables di Vercel:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `JWT_SECRET`
+4. Klik Deploy.
