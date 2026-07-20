@@ -24,7 +24,7 @@ export default function TambahKontrakPage() {
 
   const fetchData = async () => {
     try {
-      const resUnit = await fetch('/api/unit?status=Kosong');
+      const resUnit = await fetch('/api/unit?status_unit=Kosong');
       const dataUnit = await resUnit.json();
       setUnits(dataUnit);
 
