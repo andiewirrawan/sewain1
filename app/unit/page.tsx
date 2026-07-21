@@ -14,8 +14,12 @@ export default function UnitPage() {
   const [status, setStatus] = useState('Semua');
   const [user, setUser] = useState<{ role: string } | null>(() => {
     if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      try { return storedUser ? JSON.parse(storedUser) : null; } catch(e) { return null; }
+      try {
+        const storedUser = localStorage.getItem('user');
+        return storedUser ? JSON.parse(storedUser) : null;
+      } catch(e) { 
+        return null; 
+      }
     }
     return null;
   });
@@ -23,9 +27,12 @@ export default function UnitPage() {
   const fetchUnits = async () => {
     setLoading(true);
     try {
+      let token = '';
+      try { token = localStorage.getItem('token') || ''; } catch(e) {}
+      
       const res = await fetch(`/api/unit?kategori=${kategori}&status_unit=${status}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       const data = await res.json();
@@ -47,10 +54,13 @@ export default function UnitPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus unit ini?')) return;
 
     try {
+      let token = '';
+      try { token = localStorage.getItem('token') || ''; } catch(e) {}
+
       const res = await fetch(`/api/unit/${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 

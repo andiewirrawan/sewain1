@@ -29,8 +29,12 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login gagal');
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      try {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      } catch (e) {
+        console.warn('localStorage not accessible', e);
+      }
       
       // Set cookie for middleware
       document.cookie = `token=${data.token}; path=/; max-age=86400; SameSite=Strict`;

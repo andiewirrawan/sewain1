@@ -11,18 +11,41 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    let token = '';
+    try {
+      token = localStorage.getItem('token') || '';
+    } catch (e) {
+      console.warn('localStorage not accessible', e);
+    }
+    
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    
     fetch('/api/dashboard', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
-      .then(res => {
-        if (!res.ok) throw new Error('Gagal memuat dashboard');
+      .then(async res => {
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          throw new Error('Unauthorized');
+        }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Gagal memuat dashboard');
+        }
         return res.json();
       })
       .then(setData)
-      .catch(err => setError(err.message))
+      .catch(err => {
+        if (err.message !== 'Unauthorized') {
+          setError(err.message);
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
