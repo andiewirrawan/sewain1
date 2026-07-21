@@ -52,9 +52,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nama, whatsapp, email } = body;
+    const { nama, whatsapp } = body;
 
-    // Required fields based on UI form (even if we don't save all to DB)
+    // Required fields based on UI form
     if (!nama || !whatsapp) {
       return NextResponse.json({ message: 'Nama dan WhatsApp wajib diisi' }, { status: 400 });
     }
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         {
           nama,
           whatsapp,
-          email: email || null
+          email: null
         }
       ])
       .select()

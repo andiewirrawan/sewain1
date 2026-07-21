@@ -13,8 +13,7 @@ export default function EditPenyewaPage() {
   const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState({
     nama: '',
-    whatsapp: '',
-    email: ''
+    whatsapp: ''
   });
 
   useEffect(() => {
@@ -35,8 +34,7 @@ export default function EditPenyewaPage() {
       const data = await res.json();
       setFormData({
         nama: data.nama || '',
-        whatsapp: data.whatsapp || '',
-        email: data.email || ''
+        whatsapp: data.whatsapp || ''
       });
     } catch (error) {
       console.error(error);
@@ -113,17 +111,6 @@ export default function EditPenyewaPage() {
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
               placeholder="08..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email (Opsional)</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
             />
           </div>
 
