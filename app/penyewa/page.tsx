@@ -145,7 +145,6 @@ export default function PenyewaPage() {
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{p.nama}</div>
-                      <div className="text-sm text-gray-500">{p.nik}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{p.whatsapp}</div>

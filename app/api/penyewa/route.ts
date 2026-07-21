@@ -17,8 +17,7 @@ export async function GET(request: Request) {
         kontrak_sewa (
           status_kontrak,
           unit (
-            kode_unit,
-            
+            kode_unit
           )
         )
       `)
@@ -73,6 +72,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      console.error('Supabase INSERT error:', error);
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 

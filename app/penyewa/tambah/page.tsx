@@ -9,11 +9,8 @@ export default function TambahPenyewaPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nama: '',
-    nik: '',
-    alamat: '',
     whatsapp: '',
-    kontak_darurat: '',
-    jenis_usaha: ''
+    email: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -69,62 +66,24 @@ export default function TambahPenyewaPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">NIK (Nomor Induk Kependudukan) *</label>
+            <label className="block text-sm font-medium text-gray-700">WhatsApp *</label>
             <input
               type="text"
-              name="nik"
+              name="whatsapp"
               required
-              value={formData.nik}
+              value={formData.whatsapp}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+              placeholder="08..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Alamat Lengkap *</label>
-            <textarea
-              name="alamat"
-              required
-              rows={3}
-              value={formData.alamat}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">WhatsApp *</label>
-              <input
-                type="text"
-                name="whatsapp"
-                required
-                value={formData.whatsapp}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
-                placeholder="08..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Kontak Darurat *</label>
-              <input
-                type="text"
-                name="kontak_darurat"
-                required
-                value={formData.kontak_darurat}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
-                placeholder="08..."
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Jenis Usaha (Opsional)</label>
+            <label className="block text-sm font-medium text-gray-700">Email (Opsional)</label>
             <input
-              type="text"
-              name="jenis_usaha"
-              value={formData.jenis_usaha}
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
             />
