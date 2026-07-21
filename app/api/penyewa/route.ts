@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getUserFromRequest } from '@/lib/auth';
 import { catatAuditLog } from '@/lib/audit';
 
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     const { nama, whatsapp } = body;
 
     // Required fields based on UI form
+    console.log('Using SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
     if (!nama || !whatsapp) {
       return NextResponse.json({ message: 'Nama dan WhatsApp wajib diisi' }, { status: 400 });
     }
