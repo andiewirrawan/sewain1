@@ -65,9 +65,18 @@ export default function Sidebar() {
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       <aside className={cn(
-        "fixed left-0 top-0 h-screen bg-slate-900 text-slate-300 transition-all duration-300 z-40 flex flex-col border-r border-slate-800",
-        isOpen ? "w-60" : "w-0 -translate-x-full lg:w-20 lg:translate-x-0"
+        "h-screen bg-slate-900 text-slate-300 transition-all duration-300 z-40 flex flex-col border-r border-slate-800 shrink-0",
+        "fixed left-0 top-0 lg:sticky",
+        isOpen ? "w-60 translate-x-0" : "w-60 -translate-x-full lg:w-20 lg:translate-x-0"
       )}>
         <div className="p-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
