@@ -61,11 +61,16 @@ export async function GET(request: Request) {
       pembayaran?.filter(p => p.status_pembayaran === 'Lunas' && p.periode === periodeBulanIni).map(p => p.id_kontrak)
     );
 
-    const { data: belum_bayar_bulan_ini } = await supabase
+    let query = supabase
       .from('kontrak_sewa')
       .select('nomor_kontrak, id_penyewa, id_unit, penyewa(nama, whatsapp), unit(kode_unit)')
-      .eq('status_kontrak', 'Aktif')
-      .not('id_kontrak', 'in', `(${Array.from(pembayaranLunasBulanIni).join(',')})`);
+      .eq('status_kontrak', 'Aktif');
+
+    if (pembayaranLunasBulanIni.size > 0) {
+      query = query.not('id_kontrak', 'in', `(${Array.from(pembayaranLunasBulanIni).join(',')})`);
+    }
+
+    const { data: belum_bayar_bulan_ini } = await query;
 
     // 6. Jatuh Tempo Minggu Ini
     const mingguDepan = new Date();
