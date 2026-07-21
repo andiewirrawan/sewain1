@@ -87,7 +87,7 @@ export default function TambahKontrakPage() {
               <option value="">-- Pilih Unit Kosong --</option>
               {units.map((u) => (
                 <option key={u.id_unit} value={u.id_unit}>
-                  {u.kode_unit} - {u.nomor_unit} (Rp {u.harga_sewa.toLocaleString('id-ID')})
+                  {u.kode_unit} (Rp {u.harga_sewa.toLocaleString('id-ID')})
                 </option>
               ))}
             </select>

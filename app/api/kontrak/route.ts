@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const { data: penyewaData, error: errPenyewa } = await supabase.from('penyewa').select('*').eq('id_penyewa', id_penyewa).single();
     if (errPenyewa || !penyewaData) return NextResponse.json({ message: 'Penyewa tidak ditemukan' }, { status: 404 });
 
-    if (unitData.kategori === 'Pujasera' && !penyewaData.jenis_usaha) {
+    if (unitData.jenis_unit === 'Pujasera' && !penyewaData.jenis_usaha) {
       return NextResponse.json({ message: 'Untuk unit Pujasera, jenis usaha penyewa tidak boleh kosong' }, { status: 400 });
     }
 

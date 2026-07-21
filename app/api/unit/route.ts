@@ -6,7 +6,7 @@ import { catatAuditLog } from '@/lib/audit';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const kategori = searchParams.get('kategori');
+    const jenis_unit = searchParams.get('jenis_unit');
     const status_unit = searchParams.get('status_unit');
 
     let query = supabase
@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
         )
       `);
 
-    if (kategori && kategori !== 'Semua') {
-      query = query.eq('kategori', kategori);
+    if (jenis_unit && jenis_unit !== 'Semua') {
+      query = query.eq('jenis_unit', jenis_unit);
     }
     if (status_unit && status_unit !== 'Semua') {
       query = query.eq('status_unit', status_unit);

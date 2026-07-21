@@ -10,7 +10,7 @@ export default function UnitPage() {
   const router = useRouter();
   const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [kategori, setKategori] = useState('Semua');
+  const [jenisUnit, setJenisUnit] = useState('Semua');
   const [status, setStatus] = useState('Semua');
   const [user, setUser] = useState<{ role: string } | null>(() => {
     if (typeof window !== 'undefined') {
@@ -30,7 +30,7 @@ export default function UnitPage() {
       let token = '';
       try { token = localStorage.getItem('token') || ''; } catch(e) {}
       
-      const res = await fetch(`/api/unit?kategori=${kategori}&status_unit=${status}`, {
+      const res = await fetch(`/api/unit?jenis_unit=${jenisUnit}&status_unit=${status}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +47,7 @@ export default function UnitPage() {
   useEffect(() => {
     fetchUnits();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kategori, status]);
+  }, [jenisUnit, status]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,13 +103,13 @@ export default function UnitPage() {
 
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
         <div className="space-y-1.5 w-full sm:w-auto">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kategori</label>
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jenis Unit</label>
           <select 
-            value={kategori} 
-            onChange={(e) => setKategori(e.target.value)}
+            value={jenisUnit} 
+            onChange={(e) => setJenisUnit(e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
-            <option value="Semua">Semua Kategori</option>
+            <option value="Semua">Semua Jenis</option>
             <option value="Kios">Kios</option>
             <option value="Stand">Stand</option>
             <option value="Kos AC">Kos AC</option>
@@ -140,8 +140,7 @@ export default function UnitPage() {
             <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-semibold">Kode Unit</th>
-                <th className="px-6 py-4 font-semibold">Kategori</th>
-                <th className="px-6 py-4 font-semibold">Jenis</th>
+                <th className="px-6 py-4 font-semibold">Jenis Unit</th>
                 <th className="px-6 py-4 font-semibold">Harga Sewa</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold">Penyewa Aktif</th>
@@ -152,11 +151,11 @@ export default function UnitPage() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Memuat data...</td>
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">Memuat data...</td>
                 </tr>
               ) : units.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Tidak ada data unit.</td>
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">Tidak ada data unit.</td>
                 </tr>
               ) : (
                 units.map((unit) => (
@@ -166,7 +165,6 @@ export default function UnitPage() {
                     onClick={() => router.push(`/unit/${unit.id_unit}`)}
                   >
                     <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-700">{unit.kode_unit}</td>
-                    <td className="px-6 py-4 text-slate-600">{unit.kategori}</td>
                     <td className="px-6 py-4 text-slate-600">{unit.jenis_unit}</td>
                     <td className="px-6 py-4 font-medium text-slate-800">{formatRupiah(unit.harga_sewa)}</td>
                     <td className="px-6 py-4">

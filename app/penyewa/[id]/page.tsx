@@ -155,7 +155,7 @@ export default function DetailPenyewaPage() {
                   <li key={kontrak.id_kontrak} className="py-3 flex justify-between items-center">
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {kontrak.unit?.kode_unit} - {kontrak.unit?.nomor_unit}
+                        {kontrak.unit?.kode_unit}
                       </p>
                       <p className="text-xs text-gray-500">
                         Masuk: {kontrak.tanggal_masuk} | Jatuh Tempo: Tgl {kontrak.tanggal_jatuh_tempo}

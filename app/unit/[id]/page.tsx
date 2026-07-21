@@ -92,16 +92,8 @@ export default function DetailUnitPage() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <p className="text-xs text-slate-500 font-medium">Kategori</p>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{unit.kategori}</p>
-              </div>
-              <div>
                 <p className="text-xs text-slate-500 font-medium">Jenis Unit</p>
                 <p className="text-sm font-semibold text-slate-900 mt-0.5">{unit.jenis_unit}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Nomor Unit</p>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{unit.nomor_unit}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Harga Sewa Default</p>

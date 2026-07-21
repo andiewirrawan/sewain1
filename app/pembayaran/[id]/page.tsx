@@ -142,7 +142,7 @@ export default function PembayaranDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-blue-600/70 font-semibold uppercase">Unit</p>
-                    <p className="font-bold text-gray-900">{data.kontrak_sewa?.unit?.kode_unit} - {data.kontrak_sewa?.unit?.nomor_unit}</p>
+                    <p className="font-bold text-gray-900">{data.kontrak_sewa?.unit?.kode_unit}</p>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-blue-200 mt-4">

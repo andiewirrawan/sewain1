@@ -10,9 +10,7 @@ export default function TambahUnitPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     kode_unit: '',
-    kategori: 'Kios',
-    jenis_unit: '',
-    nomor_unit: '',
+    jenis_unit: 'Kios',
     harga_sewa: '',
     status_unit: 'Kosong'
   });
@@ -82,22 +80,10 @@ export default function TambahUnitPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Nomor Unit</label>
-              <input 
-                type="text" 
-                name="nomor_unit"
-                required
-                value={formData.nomor_unit}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400"
-                placeholder="Contoh: A-12"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Kategori</label>
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Jenis Unit</label>
               <select 
-                name="kategori"
-                value={formData.kategori}
+                name="jenis_unit"
+                value={formData.jenis_unit}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               >
@@ -108,18 +94,6 @@ export default function TambahUnitPage() {
                 <option value="Ruko">Ruko</option>
                 <option value="Gudang">Gudang</option>
               </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Jenis Unit</label>
-              <input 
-                type="text" 
-                name="jenis_unit"
-                required
-                value={formData.jenis_unit}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400"
-                placeholder="Contoh: Lantai 1 / Blok A"
-              />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Harga Sewa (Rp)</label>

@@ -14,9 +14,7 @@ export default function EditUnitPage() {
   const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState({
     kode_unit: '',
-    kategori: 'Kios',
-    jenis_unit: '',
-    nomor_unit: '',
+    jenis_unit: 'Kios',
     harga_sewa: '',
     status_unit: 'Kosong'
   });
@@ -34,9 +32,7 @@ export default function EditUnitPage() {
         const data = await res.json();
         setFormData({
           kode_unit: data.kode_unit,
-          kategori: data.kategori,
           jenis_unit: data.jenis_unit,
-          nomor_unit: data.nomor_unit,
           harga_sewa: data.harga_sewa.toString(),
           status_unit: data.status_unit
         });
@@ -114,21 +110,10 @@ export default function EditUnitPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Nomor Unit</label>
-              <input 
-                type="text" 
-                name="nomor_unit"
-                required
-                value={formData.nomor_unit}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Kategori</label>
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Jenis Unit</label>
               <select 
-                name="kategori"
-                value={formData.kategori}
+                name="jenis_unit"
+                value={formData.jenis_unit}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               >
@@ -139,17 +124,6 @@ export default function EditUnitPage() {
                 <option value="Ruko">Ruko</option>
                 <option value="Gudang">Gudang</option>
               </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Jenis Unit</label>
-              <input 
-                type="text" 
-                name="jenis_unit"
-                required
-                value={formData.jenis_unit}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400"
-              />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Harga Sewa (Rp)</label>

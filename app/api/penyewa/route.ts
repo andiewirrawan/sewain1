@@ -18,7 +18,7 @@ export async function GET(request: Request) {
           status_kontrak,
           unit (
             kode_unit,
-            nomor_unit
+            
           )
         )
       `)
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
     const mappedData = data.map((penyewa: any) => {
       const activeContracts = penyewa.kontrak_sewa?.filter((k: any) => k.status_kontrak === 'Aktif') || [];
-      const unitList = activeContracts.map((k: any) => k.unit?.kode_unit || k.unit?.nomor_unit || '-').join(', ');
+      const unitList = activeContracts.map((k: any) => k.unit?.kode_unit || '-').join(', ');
       
       return {
         ...penyewa,

@@ -159,7 +159,7 @@ export default function KontrakPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{k.unit?.kode_unit}</div>
-                      <div className="text-xs text-gray-500">{k.unit?.nomor_unit}</div>
+                      
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">Masuk: {formatTanggal(k.tanggal_masuk)}</div>

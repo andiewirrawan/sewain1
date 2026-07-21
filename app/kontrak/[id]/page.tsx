@@ -97,12 +97,8 @@ export default function DetailKontrakPage() {
               <p className="font-medium">{kontrak.unit?.kode_unit}</p>
             </div>
             <div>
-              <p className="text-gray-500">Nomor Unit</p>
-              <p className="font-medium">{kontrak.unit?.nomor_unit}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Kategori</p>
-              <p className="font-medium">{kontrak.unit?.kategori}</p>
+              <p className="text-gray-500">Jenis Unit</p>
+              <p className="font-medium">{kontrak.unit?.jenis_unit}</p>
             </div>
             <div>
               <p className="text-gray-500">Harga Sewa</p>
