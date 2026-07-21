@@ -1,6 +1,14 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Hapus tabel lama untuk reset total:
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS pembayaran CASCADE;
+DROP TABLE IF EXISTS kontrak_sewa CASCADE;
+DROP TABLE IF EXISTS penyewa CASCADE;
+DROP TABLE IF EXISTS unit CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- Table: users
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -62,6 +70,18 @@ CREATE TABLE IF NOT EXISTS audit_log (
   data_baru JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Insert Default Owner User
+-- Email: admin@sewain.com
+-- Password: admin123
+INSERT INTO users (nama, email, password, role, status)
+VALUES (
+  'Owner SEWAIN',
+  'admin@sewain.com',
+  '$2b$10$kkNJYqkwNmaM0LwHXrNmuu7wfcLjTf6pmCZ75zzA8J9s9wOUfExDW',
+  'Owner',
+  'Aktif'
+) ON CONFLICT (email) DO NOTHING;
 
 -- Enable RLS (Row Level Security) - optional but recommended
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

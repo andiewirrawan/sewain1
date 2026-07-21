@@ -23,15 +23,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'User tidak ditemukan atau tidak aktif' }, { status: 401 });
     }
 
+    const dbPassword = user.password || user.password_hash;
+    if (!dbPassword) {
+      return NextResponse.json({ message: 'Password column missing or empty in database' }, { status: 500 });
+    }
+
     // Cek password
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(password, dbPassword);
     if (!isPasswordValid) {
       return NextResponse.json({ message: 'Password salah' }, { status: 401 });
     }
 
     // Generate JWT
+    const userId = user.id || user.id_user;
     const token = await generateToken({
-      id: user.id_user,
+      id: userId,
       nama: user.nama,
       email: user.email,
       role: user.role,
@@ -40,13 +46,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       token,
       user: {
-        id: user.id_user,
+        id: userId,
         nama: user.nama,
         role: user.role,
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ message: 'Internal Server Error: ' + (error as any).message }, { status: 500 });
   }
 }
