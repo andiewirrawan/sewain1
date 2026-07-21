@@ -35,7 +35,12 @@ export default function TambahPembayaran() {
 
   const fetchKontrak = async () => {
     try {
-      const res = await fetch('/api/kontrak?status=Aktif');
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/kontrak?status=Aktif', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Gagal mengambil data kontrak');
       const data = await res.json();
       setKontrakAktif(data);
@@ -65,16 +70,20 @@ export default function TambahPembayaran() {
       const payload = {
         ...formData,
         periode: `${formData.periode_bulan}-${formData.periode_tahun}`,
-        nominal: parseFloat(formData.nominal)
+        nominal: parseFloat(formData.nominal) || 0
       };
       
       // Remove temporary form fields
       const { periode_bulan, periode_tahun, ...submitData } = payload as any;
       submitData.periode = payload.periode;
 
+      const token = localStorage.getItem('token');
       const res = await fetch('/api/pembayaran', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(submitData)
       });
 

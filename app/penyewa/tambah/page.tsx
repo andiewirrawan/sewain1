@@ -26,9 +26,13 @@ export default function TambahPenyewaPage() {
     setLoading(true);
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch('/api/penyewa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(formData)
       });
 

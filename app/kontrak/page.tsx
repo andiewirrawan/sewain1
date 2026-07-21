@@ -22,7 +22,12 @@ export default function KontrakPage() {
 
   const fetchKontrak = async () => {
     try {
-      const res = await fetch('/api/kontrak');
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/kontrak', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Gagal mengambil data kontrak');
       const data = await res.json();
       setKontrak(data);
@@ -38,8 +43,12 @@ export default function KontrakPage() {
     if (!confirm('Yakin ingin menghapus kontrak ini?')) return;
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`/api/kontrak/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       const data = await res.json();
       if (!res.ok) {

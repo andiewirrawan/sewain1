@@ -24,11 +24,14 @@ export default function TambahKontrakPage() {
 
   const fetchData = async () => {
     try {
-      const resUnit = await fetch('/api/unit?status_unit=Kosong');
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      const resUnit = await fetch('/api/unit?status_unit=Kosong', { headers });
       const dataUnit = await resUnit.json();
       setUnits(dataUnit);
 
-      const resPenyewa = await fetch('/api/penyewa');
+      const resPenyewa = await fetch('/api/penyewa', { headers });
       const dataPenyewa = await resPenyewa.json();
       setPenyewa(dataPenyewa);
     } catch (error) {
@@ -46,9 +49,13 @@ export default function TambahKontrakPage() {
     setLoading(true);
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch('/api/kontrak', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           ...formData,
           tanggal_jatuh_tempo: parseInt(formData.tanggal_jatuh_tempo, 10)

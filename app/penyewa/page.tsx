@@ -22,7 +22,12 @@ export default function PenyewaPage() {
 
   const fetchPenyewa = async () => {
     try {
-      const res = await fetch('/api/penyewa');
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/penyewa', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Gagal mengambil data penyewa');
       const data = await res.json();
       setPenyewa(data);
@@ -38,8 +43,12 @@ export default function PenyewaPage() {
     if (!confirm('Yakin ingin menghapus penyewa ini?')) return;
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`/api/penyewa/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       const data = await res.json();

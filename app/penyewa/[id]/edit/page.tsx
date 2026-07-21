@@ -28,7 +28,12 @@ export default function EditPenyewaPage() {
 
   const fetchPenyewa = async () => {
     try {
-      const res = await fetch(`/api/penyewa/${id}`);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/penyewa/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Data tidak ditemukan');
       const data = await res.json();
       setFormData({
@@ -58,9 +63,13 @@ export default function EditPenyewaPage() {
     setLoading(true);
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`/api/penyewa/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(formData)
       });
 

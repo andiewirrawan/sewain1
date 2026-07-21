@@ -53,10 +53,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nama, nik, alamat, whatsapp, kontak_darurat, jenis_usaha } = body;
+    const { nama, whatsapp, email } = body;
 
-    if (!nama || !nik || !alamat || !whatsapp || !kontak_darurat) {
-      return NextResponse.json({ message: 'Semua field wajib diisi' }, { status: 400 });
+    // Required fields based on UI form (even if we don't save all to DB)
+    if (!nama || !whatsapp) {
+      return NextResponse.json({ message: 'Nama dan WhatsApp wajib diisi' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -64,11 +65,8 @@ export async function POST(request: Request) {
       .insert([
         {
           nama,
-          nik,
-          alamat,
           whatsapp,
-          kontak_darurat,
-          jenis_usaha
+          email: email || null
         }
       ])
       .select()
@@ -79,7 +77,6 @@ export async function POST(request: Request) {
     }
 
     await catatAuditLog(user, 'CREATE', 'penyewa', data.id_penyewa, null, data);
-
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
