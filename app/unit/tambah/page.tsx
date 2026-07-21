@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
+import { formatRupiahString, parseRupiahString } from '@/lib/utils';
 
 export default function TambahUnitPage() {
   const router = useRouter();
@@ -16,7 +17,11 @@ export default function TambahUnitPage() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === 'harga_sewa') {
+      setFormData({ ...formData, [e.target.name]: parseRupiahString(e.target.value) });
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,14 +103,14 @@ export default function TambahUnitPage() {
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Harga Sewa (Rp)</label>
               <input 
-                type="number" 
+                type="text" 
+                inputMode="numeric"
                 name="harga_sewa"
                 required
-                min="0"
-                value={formData.harga_sewa}
+                value={formatRupiahString(formData.harga_sewa)}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400"
-                placeholder="Contoh: 1500000"
+                placeholder="Contoh: 1.500.000"
               />
             </div>
             <div className="space-y-2">

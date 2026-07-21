@@ -11,6 +11,7 @@ import {
   User, 
   Building2 
 } from 'lucide-react';
+import { formatRupiahString, parseRupiahString } from '@/lib/utils';
 
 export default function TambahPembayaran() {
   const router = useRouter();
@@ -193,12 +194,13 @@ export default function TambahPembayaran() {
                 <CreditCard size={16} className="text-blue-500"/> Nominal (Rp)
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 required
                 className="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 placeholder="Masukkan nominal"
-                value={formData.nominal}
-                onChange={(e) => setFormData({ ...formData, nominal: e.target.value })}
+                value={formatRupiahString(formData.nominal)}
+                onChange={(e) => setFormData({ ...formData, nominal: parseRupiahString(e.target.value) })}
               />
             </div>
 
