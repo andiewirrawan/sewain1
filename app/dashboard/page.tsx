@@ -11,7 +11,12 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/dashboard')
+    const token = localStorage.getItem('token');
+    fetch('/api/dashboard', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(res => {
         if (!res.ok) throw new Error('Gagal memuat dashboard');
         return res.json();
