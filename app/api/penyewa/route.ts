@@ -52,12 +52,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nama, whatsapp } = body;
+    const { nama, nik, alamat, whatsapp, kontak_darurat, jenis_usaha } = body;
 
     // Required fields based on UI form
-    console.log('Using SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length);
-    if (!nama || !whatsapp) {
-      return NextResponse.json({ message: 'Nama dan WhatsApp wajib diisi' }, { status: 400 });
+    if (!nama || !nik || !alamat || !whatsapp || !kontak_darurat) {
+      return NextResponse.json({ message: 'Semua field wajib diisi' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -65,8 +64,11 @@ export async function POST(request: Request) {
       .insert([
         {
           nama,
+          nik,
+          alamat,
           whatsapp,
-          email: null
+          kontak_darurat,
+          jenis_usaha
         }
       ])
       .select()

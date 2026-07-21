@@ -13,7 +13,11 @@ export default function EditPenyewaPage() {
   const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState({
     nama: '',
-    whatsapp: ''
+    nik: '',
+    alamat: '',
+    whatsapp: '',
+    kontak_darurat: '',
+    jenis_usaha: ''
   });
 
   useEffect(() => {
@@ -34,7 +38,11 @@ export default function EditPenyewaPage() {
       const data = await res.json();
       setFormData({
         nama: data.nama || '',
-        whatsapp: data.whatsapp || ''
+        nik: data.nik || '',
+        alamat: data.alamat || '',
+        whatsapp: data.whatsapp || '',
+        kontak_darurat: data.kontak_darurat || '',
+        jenis_usaha: data.jenis_usaha || ''
       });
     } catch (error) {
       console.error(error);
@@ -102,6 +110,30 @@ export default function EditPenyewaPage() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700">NIK / No KTP *</label>
+            <input
+              type="text"
+              name="nik"
+              required
+              value={formData.nik}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Alamat Lengkap *</label>
+            <textarea
+              name="alamat"
+              required
+              rows={3}
+              value={formData.alamat}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700">WhatsApp *</label>
             <input
               type="text"
@@ -111,6 +143,30 @@ export default function EditPenyewaPage() {
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
               placeholder="08..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Kontak Darurat *</label>
+            <input
+              type="text"
+              name="kontak_darurat"
+              required
+              value={formData.kontak_darurat}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Jenis Usaha *</label>
+            <input
+              type="text"
+              name="jenis_usaha"
+              required
+              value={formData.jenis_usaha}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
             />
           </div>
 

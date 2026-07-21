@@ -62,8 +62,11 @@ export async function PUT(request: Request, context: any) {
       .from('penyewa')
       .update({
         nama: body.nama,
+        nik: body.nik,
+        alamat: body.alamat,
         whatsapp: body.whatsapp,
-        email: null
+        kontak_darurat: body.kontrak_darurat,
+        jenis_usaha: body.jenis_usaha
       })
       .eq('id_penyewa', id)
       .select()
