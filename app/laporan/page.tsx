@@ -133,9 +133,7 @@ export default function LaporanPage() {
             display['Jenis'] = flat.jenis_unit;
             display['Tarif'] = formatRupiah(flat.harga_sewa);
             display['Status'] = flat.status_unit;
-            display['Penyewa Saat Ini'] = Array.isArray(flat.kontrak_sewa) 
-              ? (flat.kontrak_sewa.find((k: any) => k.status_kontrak === 'Aktif')?.penyewa?.nama || '-')
-              : (flat.kontrak_sewa?.penyewa?.nama || '-');
+            display['Penyewa Saat Ini'] = flat.penyewa || '-';
           }
           
           return display;

@@ -20,6 +20,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .single();
 
     if (error) throw error;
+
+    // Derive status_unit from active contract
+    const activeContract = data.kontrak_sewa?.find((k: any) => k.status_kontrak === 'Aktif');
+    data.status_unit = activeContract ? 'Terisi' : 'Kosong';
+
     return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
