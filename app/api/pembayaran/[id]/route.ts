@@ -18,18 +18,23 @@ export async function GET(
     console.log("ID:", id);
 
     // 1. Fetch pembayaran
-    const { data: pembayaran, error: pembayaranError } = await supabase
+    const { data: pData, error: pembayaranError } = await supabase
       .from('pembayaran')
       .select('*')
-      .eq('id_pembayaran', id)
-      .single();
+      .eq('id_pembayaran', id);
 
-    if (pembayaranError) console.error("Error fetching pembayaran:", pembayaranError);
-    console.log("Pembayaran:", pembayaran);
+    if (pembayaranError) {
+      console.error("Error fetching pembayaran:", pembayaranError);
+      return NextResponse.json({ message: pembayaranError.message }, { status: 500 });
+    }
 
-    if (pembayaranError || !pembayaran) {
+    if (!pData || pData.length === 0) {
+      console.error("Pembayaran tidak ditemukan untuk ID:", id);
       return NextResponse.json({ message: 'Pembayaran tidak ditemukan' }, { status: 404 });
     }
+
+    const pembayaran = pData[0];
+    console.log("Pembayaran:", pembayaran);
 
     // 2. Fetch kontrak
     const { data: kontrak, error: kontrakError } = await supabase
