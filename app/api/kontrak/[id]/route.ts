@@ -13,6 +13,7 @@ export async function GET(request: Request, context: any) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('Fetching contract with ID:', id);
     const { data, error } = await supabase
       .from('kontrak_sewa')
       .select(`
@@ -24,11 +25,14 @@ export async function GET(request: Request, context: any) {
       .single();
 
     if (error) {
+      console.error('Supabase GET error:', error);
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
 
+    console.log('Contract data:', data);
     return NextResponse.json(data);
   } catch (error: any) {
+    console.error('API Error:', error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

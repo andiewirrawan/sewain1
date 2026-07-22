@@ -22,12 +22,12 @@ export default function DetailKontrakPage() {
   const fetchDetail = async () => {
     try {
       const res = await fetch(`/api/kontrak/${id}`);
-      if (!res.ok) throw new Error('Gagal mengambil data kontrak');
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Gagal mengambil data kontrak');
       setKontrak(data);
-    } catch (error) {
-      console.error(error);
-      alert('Data tidak ditemukan');
+    } catch (error: any) {
+      console.error('Fetch detail error:', error);
+      alert(error.message || 'Data tidak ditemukan');
       router.push('/kontrak');
     } finally {
       setLoading(false);
