@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 
-// Helper to sanitize BigInt to Number/String if needed (Supabase usually returns numbers, but just in case)
 function sanitize(data: any): any {
   if (Array.isArray(data)) return data.map(sanitize);
   if (data !== null && typeof data === 'object') {
@@ -19,11 +18,14 @@ export async function GET(
 ) {
   try {
     const { jenis } = await params;
-    console.log(`[Laporan API] Request: ${jenis}`);
+    const { searchParams } = new URL(request.url);
+    const bulan = searchParams.get('bulan');
+    const tahun = searchParams.get('tahun');
     
     const user = await getUserFromRequest(request as any);
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
+    let query = supabase.from('pembayaran'); // base query placeholder
     let data = null;
     let error = null;
 
@@ -39,40 +41,43 @@ export async function GET(
       }, {} as any);
       data = Object.values(occupancyObj || {});
     } else if (jenis === 'pendapatan') {
-      const { data: p, error: e } = await supabase.from('pembayaran').select('nominal, periode').eq('status_pembayaran', 'Lunas');
+      let q = supabase.from('pembayaran').select('tanggal_bayar, periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), nominal, metode_pembayaran').eq('status_pembayaran', 'Lunas');
+      if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
+      else if (tahun) q = q.ilike('periode', `%-${tahun}`);
+      const { data: p, error: e } = await q;
       error = e;
       data = p;
     } else if (jenis === 'tunggakan') {
-      const { data: t, error: e } = await supabase.from('pembayaran').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit)), periode, nominal').in('status_pembayaran', ['Belum Bayar', 'Terlambat']);
+      const { data: t, error: e } = await supabase.from('pembayaran').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit), tanggal_jatuh_tempo), periode, nominal, status_pembayaran').in('status_pembayaran', ['Belum Bayar', 'Terlambat']);
       error = e;
       data = t;
     } else if (jenis === 'pembayaran') {
-      const { data: p, error: e } = await supabase.from('pembayaran').select('*, kontrak_sewa(penyewa(nama), unit(kode_unit))');
+      const { data: p, error: e } = await supabase.from('pembayaran').select('periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), tanggal_bayar, nominal, status_pembayaran, metode_pembayaran');
       error = e;
       data = p;
     } else if (jenis === 'penyewa-aktif') {
-      const { data: p, error: e } = await supabase.from('kontrak_sewa').select('penyewa(nama, whatsapp, email), unit(kode_unit)').eq('status_kontrak', 'Aktif');
+      const { data: p, error: e } = await supabase.from('kontrak_sewa').select('penyewa(nama, whatsapp), unit(kode_unit), tanggal_masuk, status_kontrak').eq('status_kontrak', 'Aktif');
       error = e;
       data = p;
     } else if (jenis === 'riwayat-penyewa') {
       const { data: r, error: e } = await supabase.from('kontrak_sewa').select('penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak');
       error = e;
       data = r;
+    } else if (jenis === 'kontrak') {
+      const { data: k, error: e } = await supabase.from('kontrak_sewa').select('nomor_kontrak, penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak');
+      error = e;
+      data = k;
+    } else if (jenis === 'unit') {
+      const { data: u, error: e } = await supabase.from('unit').select('kode_unit, jenis_unit, harga_sewa, status_unit, kontrak_sewa(penyewa(nama))').eq('kontrak_sewa.status_kontrak', 'Aktif');
+      error = e;
+      data = u;
     } else {
       return NextResponse.json({ message: 'Jenis laporan tidak ditemukan' }, { status: 404 });
     }
 
-    if (error) {
-      console.error(`[Laporan API] Query error for ${jenis}:`, error);
-      throw error;
-    }
-
-    const sanitizedData = sanitize(data);
-    console.log(`[Laporan API] Successfully fetched ${jenis}. Data count: ${Array.isArray(sanitizedData) ? sanitizedData.length : 'N/A'}`);
-    
-    return NextResponse.json(sanitizedData);
+    if (error) throw error;
+    return NextResponse.json(sanitize(data));
   } catch (error: any) {
-    console.error(`[Laporan API] Error for ${params}:`, error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
