@@ -14,31 +14,57 @@ export async function GET(
     }
 
     const { id } = await params;
+    console.log("Fetching payment Detail. ID =", id);
 
-    console.log("params.id =", id);
-
-    const { data, error } = await supabase
+    // 1. Fetch pembayaran
+    const { data: pembayaran, error: pembayaranError } = await supabase
       .from('pembayaran')
-      .select(`
-        *,
-        kontrak_sewa (
-          *,
-          unit (*),
-          penyewa (*)
-        )
-      `)
+      .select('*')
       .eq('id_pembayaran', id)
       .single();
 
-    console.log("result =", data);
-    console.log("error =", error);
+    if (pembayaranError || !pembayaran) {
+      console.error("Error fetching pembayaran:", pembayaranError);
+      return NextResponse.json({ message: 'Pembayaran tidak ditemukan' }, { status: 404 });
+    }
+    console.log("pembayaran =", pembayaran);
 
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: 404 });
+    // 2. Fetch kontrak
+    const { data: kontrak, error: kontrakError } = await supabase
+      .from('kontrak_sewa')
+      .select('*')
+      .eq('id_kontrak', pembayaran.id_kontrak)
+      .single();
+
+    if (kontrakError || !kontrak) {
+      console.error("Error fetching kontrak:", kontrakError);
+    }
+    console.log("kontrak =", kontrak);
+
+    // 3. Fetch unit & penyewa (if kontrak exists)
+    let unit = null;
+    let penyewa = null;
+
+    if (kontrak) {
+        const { data: uData } = await supabase.from('unit').select('*').eq('id_unit', kontrak.id_unit).single();
+        unit = uData;
+        console.log("unit =", unit);
+
+        const { data: pData } = await supabase.from('penyewa').select('*').eq('id_penyewa', kontrak.id_penyewa).single();
+        penyewa = pData;
+        console.log("penyewa =", penyewa);
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...pembayaran,
+      kontrak_sewa: kontrak ? {
+          ...kontrak,
+          unit,
+          penyewa
+      } : null
+    });
   } catch (error: any) {
+    console.error("API Error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
