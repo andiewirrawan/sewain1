@@ -13,9 +13,9 @@ export async function PUT(
   const { id } = await params;
   const { role, status } = await request.json();
 
-  const { data: oldData } = await supabase.from('users').select('*').eq('id_user', id).single();
+  const { data: oldData } = await supabase.from('users').select('*').eq('id', id).single();
 
-  const { error } = await supabase.from('users').update({ role, status }).eq('id_user', id);
+  const { error } = await supabase.from('users').update({ role, status }).eq('id', id);
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
   
   await catatAuditLog(user, 'Update User', 'users', id, oldData, { role, status });
@@ -32,9 +32,9 @@ export async function DELETE(
 
   const { id } = await params;
   
-  const { data: oldData } = await supabase.from('users').select('*').eq('id_user', id).single();
+  const { data: oldData } = await supabase.from('users').select('*').eq('id', id).single();
   
-  const { error } = await supabase.from('users').delete().eq('id_user', id);
+  const { error } = await supabase.from('users').delete().eq('id', id);
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
   
   await catatAuditLog(user, 'Delete User', 'users', id, oldData, null);

@@ -8,12 +8,11 @@ export async function GET(request: Request) {
   const user = await getUserFromRequest(request as any);
   if (!user || !requireRole(user, ['Owner'])) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const { data: users, error } = await supabase.from('users').select('id_user, nama, email, role, status');
+  const { data: users, error } = await supabase.from('users').select('*');
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
 
-  // Map id_user to id for frontend consistency if needed, or just return as is
   const mappedUsers = users.map(u => ({
-    id: u.id_user,
+    id: u.id,
     nama: u.nama,
     email: u.email,
     role: u.role,
@@ -33,14 +32,17 @@ export async function POST(request: Request) {
   const { data, error } = await supabase.from('users').insert({ 
     nama, 
     email, 
-    password_hash: hashedPassword, 
+    password: hashedPassword, 
     role, 
     status: 'Aktif' 
   }).select().single();
   
-  if (error) return NextResponse.json({ message: error.message }, { status: 500 });
+  if (error) {
+    console.error("Supabase insert error:", error);
+    return NextResponse.json({ message: error.message }, { status: 500 });
+  }
   
-  await catatAuditLog(user, 'Create User', 'users', data.id_user, null, { nama, email, role });
+  await catatAuditLog(user, 'Create User', 'users', data.id, null, { nama, email, role });
   
   return NextResponse.json({ message: 'User berhasil dibuat' });
 }

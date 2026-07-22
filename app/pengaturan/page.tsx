@@ -117,9 +117,14 @@ export default function PengaturanPage() {
         setShowAddUser(false);
         setNewUser({ nama: '', email: '', password: '', role: 'Admin' });
         fetchAllData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.error("API error adding user:", errData);
+        alert(`Gagal menambahkan user: ${errData.message || 'Kesalahan Server'}`);
       }
-    } catch (err) {
-      alert('Gagal menambahkan user');
+    } catch (err: any) {
+      console.error("Fetch error adding user:", err);
+      alert(`Gagal menambahkan user: ${err.message}`);
     }
   };
 
