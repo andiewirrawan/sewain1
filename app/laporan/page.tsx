@@ -16,8 +16,16 @@ export default function LaporanPage() {
     setData(null);
     try {
       const query = new URLSearchParams({ bulan, tahun }).toString();
-      const res = await fetch(`/api/laporan/${jenis}?${query}`);
-      if (!res.ok) throw new Error('Gagal mengambil data laporan');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/laporan/${jenis}?${query}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        if (res.status === 401) throw new Error('Unauthorized: Sesi anda telah habis. Silakan login kembali.');
+        throw new Error(`Gagal mengambil data laporan (HTTP ${res.status})`);
+      }
       const json = await res.json();
       setData(Array.isArray(json) ? json : (json ? [json] : []));
     } catch (err: any) {

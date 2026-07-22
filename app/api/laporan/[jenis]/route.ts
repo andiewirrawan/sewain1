@@ -22,8 +22,14 @@ export async function GET(
     const bulan = searchParams.get('bulan');
     const tahun = searchParams.get('tahun');
     
+    console.log("Authorization Header:", request.headers.get("authorization"));
     const user = await getUserFromRequest(request as any);
-    if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    console.log("Decoded User:", user);
+
+    if (!user) {
+      console.log("User is null. Reason: Token missing or invalid.");
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
 
     let query = supabase.from('pembayaran'); // base query placeholder
     let data = null;
