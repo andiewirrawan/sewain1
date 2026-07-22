@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Users, Building2, Wallet, AlertCircle, CalendarDays, Percent, BarChart3, ReceiptText } from 'lucide-react';
 import { formatRupiah } from '@/lib/format';
@@ -11,29 +12,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let token = '';
-    try {
-      token = localStorage.getItem('token') || '';
-    } catch (e) {
-      console.warn('localStorage not accessible', e);
-    }
-    
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
-    
-    fetch('/api/dashboard', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
+    apiFetch('/api/dashboard')
       .then(async res => {
-        if (res.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          throw new Error('Unauthorized');
-        }
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.message || 'Gagal memuat dashboard');
@@ -42,9 +22,7 @@ export default function DashboardPage() {
       })
       .then(setData)
       .catch(err => {
-        if (err.message !== 'Unauthorized') {
-          setError(err.message);
-        }
+        setError(err.message);
       })
       .finally(() => setLoading(false));
   }, []);

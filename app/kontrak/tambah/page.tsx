@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
 export default function TambahKontrakPage() {
   const router = useRouter();
@@ -24,14 +25,13 @@ export default function TambahKontrakPage() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { 'Authorization': `Bearer ${token}` };
+      const headers = { };
 
-      const resUnit = await fetch('/api/unit?status_unit=Kosong', { headers });
+      const resUnit = await apiFetch('/api/unit?status_unit=Kosong', { headers });
       const dataUnit = await resUnit.json();
       setUnits(dataUnit);
 
-      const resPenyewa = await fetch('/api/penyewa', { headers });
+      const resPenyewa = await apiFetch('/api/penyewa', { headers });
       const dataPenyewa = await resPenyewa.json();
       setPenyewa(dataPenyewa);
     } catch (error) {
@@ -49,13 +49,11 @@ export default function TambahKontrakPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/kontrak', {
+      const res = await apiFetch('/api/kontrak', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+          },
         body: JSON.stringify({
           ...formData,
           tanggal_jatuh_tempo: parseInt(formData.tanggal_jatuh_tempo, 10)

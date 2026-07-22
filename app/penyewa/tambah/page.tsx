@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
 export default function TambahPenyewaPage() {
   const router = useRouter();
@@ -26,13 +27,11 @@ export default function TambahPenyewaPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/penyewa', {
+      const res = await apiFetch('/api/penyewa', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+          },
         body: JSON.stringify(formData)
       });
 

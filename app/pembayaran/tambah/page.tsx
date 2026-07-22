@@ -12,6 +12,7 @@ import {
   Building2 
 } from 'lucide-react';
 import { formatRupiahString, parseRupiahString } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 export default function TambahPembayaran() {
   const router = useRouter();
@@ -35,12 +36,7 @@ export default function TambahPembayaran() {
 
   const fetchKontrak = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/kontrak?status=Aktif', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch('/api/kontrak?status=Aktif');
       if (!res.ok) throw new Error('Gagal mengambil data kontrak');
       const data = await res.json();
       setKontrakAktif(data);
@@ -77,13 +73,11 @@ export default function TambahPembayaran() {
       const { periode_bulan, periode_tahun, ...submitData } = payload as any;
       submitData.periode = payload.periode;
 
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/pembayaran', {
+      const res = await apiFetch('/api/pembayaran', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+          },
         body: JSON.stringify(submitData)
       });
 

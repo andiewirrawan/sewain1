@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { formatTanggal, formatRupiah } from '@/lib/format';
+import { apiFetch } from '@/lib/api';
 
 export default function LaporanPage() {
   const [jenis, setJenis] = useState('occupancy');
@@ -16,12 +17,7 @@ export default function LaporanPage() {
     setData(null);
     try {
       const query = new URLSearchParams({ bulan, tahun }).toString();
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/laporan/${jenis}?${query}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`/api/laporan/${jenis}?${query}`);
       if (!res.ok) {
         if (res.status === 401) throw new Error('Unauthorized: Sesi anda telah habis. Silakan login kembali.');
         throw new Error(`Gagal mengambil data laporan (HTTP ${res.status})`);

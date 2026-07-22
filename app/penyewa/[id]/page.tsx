@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 export default function DetailPenyewaPage() {
   const { id } = useParams();
@@ -23,8 +24,8 @@ export default function DetailPenyewaPage() {
   const fetchDetail = async () => {
     try {
       const [resPenyewa, resRiwayat] = await Promise.all([
-        fetch(`/api/penyewa/${id}`),
-        fetch(`/api/penyewa/${id}/riwayat`)
+        apiFetch(`/api/penyewa/${id}`),
+        apiFetch(`/api/penyewa/${id}/riwayat`)
       ]);
 
       if (!resPenyewa.ok) throw new Error('Gagal mengambil data penyewa');

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Edit, ChevronRight, Eye } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 export default function PenyewaPage() {
   const router = useRouter();
@@ -22,12 +23,7 @@ export default function PenyewaPage() {
 
   const fetchPenyewa = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/penyewa', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch('/api/penyewa');
       if (!res.ok) throw new Error('Gagal mengambil data penyewa');
       const data = await res.json();
       setPenyewa(data);
@@ -43,13 +39,9 @@ export default function PenyewaPage() {
     if (!confirm('Yakin ingin menghapus penyewa ini?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/penyewa/${id}`, {
+      const res = await apiFetch(`/api/penyewa/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+        });
       
       const data = await res.json();
       

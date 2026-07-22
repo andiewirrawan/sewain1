@@ -16,6 +16,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
+import { apiFetch } from '@/lib/api';
 
 const months = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -56,12 +57,7 @@ export default function PembayaranPage() {
       if (selectedMonth) url += `&bulan=${selectedMonth}`;
       if (selectedStatus !== 'Semua') url += `&status=${selectedStatus}`;
       
-      const token = localStorage.getItem('token');
-      const res = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error('Gagal mengambil data pembayaran');
       const data = await res.json();
       setPembayaran(data);
@@ -77,13 +73,9 @@ export default function PembayaranPage() {
     if (!confirm('Yakin ingin menghapus data pembayaran ini?')) return;
     
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/pembayaran/${id}`, {
+      const res = await apiFetch(`/api/pembayaran/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+        });
       if (res.ok) {
         fetchPembayaran();
       } else {

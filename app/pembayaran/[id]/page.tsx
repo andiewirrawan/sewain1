@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
 import { 
   ArrowLeft, 
   CreditCard, 
@@ -25,12 +26,7 @@ export default function PembayaranDetail() {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`/api/pembayaran/${params.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const res = await apiFetch(`/api/pembayaran/${params.id}`);
         if (!res.ok) throw new Error('Gagal mengambil detail pembayaran');
         const json = await res.json();
         setData(json);

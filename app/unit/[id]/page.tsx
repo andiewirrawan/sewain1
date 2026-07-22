@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Building2, User, History, Receipt, BarChart, AlertCircle, Clock } from 'lucide-react';
 import { formatRupiah } from '@/lib/format';
+import { apiFetch } from '@/lib/api';
 
 export default function DetailUnitPage() {
   const params = useParams();
@@ -18,12 +19,8 @@ export default function DetailUnitPage() {
   const fetchUnit = async () => {
     try {
       const [resUnit, resRiwayat] = await Promise.all([
-        fetch(`/api/unit/${id}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        }),
-        fetch(`/api/unit/${id}/riwayat`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        })
+        apiFetch(`/api/unit/${id}`),
+        apiFetch(`/api/unit/${id}/riwayat`)
       ]);
 
       if (resUnit.ok) {

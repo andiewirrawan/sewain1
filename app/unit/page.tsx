@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Edit, Eye } from 'lucide-react';
 import { formatRupiah } from '@/lib/format';
+import { apiFetch } from '@/lib/api';
 
 export default function UnitPage() {
   const router = useRouter();
@@ -27,14 +28,9 @@ export default function UnitPage() {
   const fetchUnits = async () => {
     setLoading(true);
     try {
-      let token = '';
-      try { token = localStorage.getItem('token') || ''; } catch(e) {}
       
-      const res = await fetch(`/api/unit?jenis_unit=${jenisUnit}&status_unit=${status}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      
+      const res = await apiFetch(`/api/unit?jenis_unit=${jenisUnit}&status_unit=${status}`);
       const data = await res.json();
       setUnits(data);
     } catch (error) {
@@ -54,15 +50,11 @@ export default function UnitPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus unit ini?')) return;
 
     try {
-      let token = '';
-      try { token = localStorage.getItem('token') || ''; } catch(e) {}
+      
 
-      const res = await fetch(`/api/unit/${id}`, {
+      const res = await apiFetch(`/api/unit/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+        });
 
       if (res.ok) {
         fetchUnits();

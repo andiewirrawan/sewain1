@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2, User, Calendar, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { formatTanggal, formatRupiah } from '@/lib/format';
+import { apiFetch } from '@/lib/api';
 
 export default function DetailKontrakPage() {
   const { id } = useParams();
@@ -21,12 +22,7 @@ export default function DetailKontrakPage() {
 
   const fetchDetail = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/kontrak/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`/api/kontrak/${id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Gagal mengambil data kontrak');
       setKontrak(data);
@@ -44,14 +40,12 @@ export default function DetailKontrakPage() {
     if (!isConfirm) return;
 
     try {
-      const token = localStorage.getItem('token');
       const tanggal_keluar = new Date().toISOString().split('T')[0];
-      const res = await fetch(`/api/kontrak/${id}`, {
+      const res = await apiFetch(`/api/kontrak/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+          },
         body: JSON.stringify({ status_kontrak: status, tanggal_keluar })
       });
       

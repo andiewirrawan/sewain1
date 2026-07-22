@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Eye, FileText, ChevronRight } from 'lucide-react';
 import { formatTanggal } from '@/lib/format';
+import { apiFetch } from '@/lib/api';
 
 export default function KontrakPage() {
   const router = useRouter();
@@ -22,12 +23,7 @@ export default function KontrakPage() {
 
   const fetchKontrak = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/kontrak', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch('/api/kontrak');
       if (!res.ok) throw new Error('Gagal mengambil data kontrak');
       const data = await res.json();
       setKontrak(data);
@@ -43,13 +39,9 @@ export default function KontrakPage() {
     if (!confirm('Yakin ingin menghapus kontrak ini?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/kontrak/${id}`, {
+      const res = await apiFetch(`/api/kontrak/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+        });
       const data = await res.json();
       if (!res.ok) {
         alert(data.message || 'Gagal menghapus kontrak');

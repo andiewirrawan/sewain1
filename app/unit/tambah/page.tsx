@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { formatRupiahString, parseRupiahString } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 export default function TambahUnitPage() {
   const router = useRouter();
@@ -34,12 +35,11 @@ export default function TambahUnitPage() {
         harga_sewa: Number(formData.harga_sewa)
       };
 
-      const res = await fetch('/api/unit', {
+      const res = await apiFetch('/api/unit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+          },
         body: JSON.stringify(payload)
       });
 

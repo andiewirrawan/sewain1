@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { formatRupiahString, parseRupiahString } from '@/lib/utils';
+import { apiFetch } from '@/lib/api';
 
 export default function EditUnitPage() {
   const router = useRouter();
@@ -26,9 +27,7 @@ export default function EditUnitPage() {
 
   const fetchUnit = async () => {
     try {
-      const res = await fetch(`/api/unit/${id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await apiFetch(`/api/unit/${id}`);
       if (res.ok) {
         const data = await res.json();
         setFormData({
@@ -63,12 +62,11 @@ export default function EditUnitPage() {
         harga_sewa: Number(formData.harga_sewa)
       };
 
-      const res = await fetch(`/api/unit/${id}`, {
+      const res = await apiFetch(`/api/unit/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+          },
         body: JSON.stringify(payload)
       });
 

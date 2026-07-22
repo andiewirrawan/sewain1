@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
 export default function EditPenyewaPage() {
   const router = useRouter();
@@ -28,12 +29,7 @@ export default function EditPenyewaPage() {
 
   const fetchPenyewa = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/penyewa/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await apiFetch(`/api/penyewa/${id}`);
       if (!res.ok) throw new Error('Data tidak ditemukan');
       const data = await res.json();
       setFormData({
@@ -63,13 +59,11 @@ export default function EditPenyewaPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/penyewa/${id}`, {
+      const res = await apiFetch(`/api/penyewa/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+          },
         body: JSON.stringify(formData)
       });
 
