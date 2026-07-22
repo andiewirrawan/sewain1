@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     nama: u.nama,
     email: u.email,
     role: u.role,
-    status: u.status
+    status: u.status,
+    created_at: u.created_at,
+    created_by: u.created_by,
+    last_login: u.last_login
   }));
 
   return NextResponse.json(mappedUsers);
@@ -34,7 +37,8 @@ export async function POST(request: Request) {
     email, 
     password: hashedPassword, 
     role, 
-    status: 'Aktif' 
+    status: 'Aktif',
+    created_by: user.nama
   }).select().single();
   
   if (error) {
