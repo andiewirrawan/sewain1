@@ -63,22 +63,6 @@ export default function LaporanPage() {
       const flattenedData = (Array.isArray(json) ? json : (json ? [json] : [])).map(item => {
           let flat: any = { ...item };
           
-          // Handle nested Supabase objects
-          if (typeof flat.unit === 'object' && flat.unit !== null) {
-            flat.unit = flat.unit.kode_unit || '-';
-          }
-          if (typeof flat.penyewa === 'object' && flat.penyewa !== null) {
-            flat.penyewa = flat.penyewa.nama || '-';
-          }
-          
-          if (flat.kontrak_sewa) {
-             const k = flat.kontrak_sewa;
-             flat.unit = k.unit?.kode_unit || '-';
-             flat.penyewa = k.penyewa?.nama || '-';
-             if (k.tanggal_jatuh_tempo) flat.jatuh_tempo = k.tanggal_jatuh_tempo;
-             delete flat.kontrak_sewa;
-          }
-
           // Specific formatting for the table display
           const display: any = {};
           if (jenis === 'occupancy') {
@@ -86,50 +70,50 @@ export default function LaporanPage() {
             display['Total Unit'] = flat.total;
             display['Terisi'] = flat.terisi;
             display['Kosong'] = flat.kosong;
-            display['Occupancy'] = `${Math.round((flat.terisi / flat.total) * 100)}%`;
+            display['Occupancy'] = `${Math.round((flat.total > 0 ? (flat.terisi / flat.total) : 0) * 100)}%`;
           } else if (jenis === 'pendapatan') {
             display['Tanggal Bayar'] = formatTanggal(flat.tanggal_bayar);
             display['Periode'] = flat.periode;
-            display['Penyewa'] = flat.penyewa;
-            display['Unit'] = flat.unit;
+            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
+            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : flat.unit;
             display['Nominal'] = formatRupiah(flat.nominal);
             display['Metode'] = flat.metode_pembayaran;
           } else if (jenis === 'tunggakan') {
-            display['Penyewa'] = flat.penyewa;
-            display['Unit'] = flat.unit;
+            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
+            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : flat.unit;
             display['Periode'] = flat.periode;
             display['Nominal'] = formatRupiah(flat.nominal);
             display['Jatuh Tempo'] = formatTanggal(flat.jatuh_tempo);
             display['Status'] = flat.status_pembayaran;
           } else if (jenis === 'pembayaran') {
             display['Periode'] = flat.periode;
-            display['Penyewa'] = flat.penyewa;
-            display['Unit'] = flat.unit;
+            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
+            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : flat.unit;
             display['Tanggal Bayar'] = formatTanggal(flat.tanggal_bayar);
             display['Nominal'] = formatRupiah(flat.nominal);
             display['Status'] = flat.status_pembayaran;
             display['Metode'] = flat.metode_pembayaran;
           } else if (jenis === 'penyewa-aktif') {
-            display['Nama Penyewa'] = flat.penyewa;
-            display['WhatsApp'] = flat.whatsapp || (rawJson.find((j: any) => j.id_kontrak === flat.id_kontrak)?.penyewa?.whatsapp) || '-';
-            display['Unit'] = flat.unit;
+            display['Nama Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : (flat.penyewa || '-');
+            display['WhatsApp'] = flat.whatsapp || flat.penyewa?.whatsapp || '-';
+            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : (flat.unit || '-');
             display['Tanggal Masuk'] = formatTanggal(flat.tanggal_masuk);
             display['Status'] = flat.status_kontrak;
           } else if (jenis === 'riwayat-penyewa') {
-            display['Nama Penyewa'] = flat.penyewa;
-            display['Unit'] = flat.unit;
+            display['Nama Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : (flat.penyewa || '-');
+            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : (flat.unit || '-');
             display['Tanggal Masuk'] = formatTanggal(flat.tanggal_masuk);
             display['Tanggal Keluar'] = formatTanggal(flat.tanggal_keluar);
             display['Status'] = flat.status_kontrak;
           } else if (jenis === 'kontrak') {
             display['No Kontrak'] = flat.nomor_kontrak;
-            display['Penyewa'] = flat.penyewa;
-            display['Unit'] = flat.unit;
+            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : (flat.penyewa || '-');
+            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : (flat.unit || '-');
             display['Masuk'] = formatTanggal(flat.tanggal_masuk);
             display['Keluar'] = formatTanggal(flat.tanggal_keluar);
             display['Status'] = flat.status_kontrak;
           } else if (jenis === 'unit') {
-            display['Kode Unit'] = flat.kode_unit;
+            display['Unit'] = flat.unit || flat.kode_unit;
             display['Jenis'] = flat.jenis_unit;
             display['Tarif'] = formatRupiah(flat.harga_sewa);
             display['Status'] = flat.status_unit;
@@ -255,10 +239,11 @@ export default function LaporanPage() {
       summary = [{ label: 'Total Kontrak', value: excelData.length }];
     } else if (jenis === 'unit') {
       excelHeaders = [
-        { header: 'Kode Unit', key: 'kode_unit' },
-        { header: 'Jenis Unit', key: 'jenis_unit' },
-        { header: 'Tarif Sewa', key: 'harga_sewa', isCurrency: true },
-        { header: 'Status', key: 'status_unit' },
+        { header: 'Unit', key: 'Unit' },
+        { header: 'Jenis Unit', key: 'Jenis' },
+        { header: 'Tarif Sewa', key: 'Tarif' },
+        { header: 'Status', key: 'Status' },
+        { header: 'Penyewa Saat Ini', key: 'Penyewa Saat Ini' },
       ];
       summary = [{ label: 'Total Unit', value: excelData.length }];
     }

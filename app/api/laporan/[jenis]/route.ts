@@ -22,12 +22,8 @@ export async function GET(
     const bulan = searchParams.get('bulan');
     const tahun = searchParams.get('tahun');
     
-    console.log("Authorization Header:", request.headers.get("authorization"));
     const user = await getUserFromRequest(request as any);
-    console.log("Decoded User:", user);
-
     if (!user) {
-      console.log("User is null. Reason: Token missing or invalid.");
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -82,29 +78,37 @@ export async function GET(
       const { data: u, error: e } = await supabase
         .from('unit')
         .select(`
+          id_unit,
           kode_unit, 
           jenis_unit, 
           harga_sewa, 
           status_unit, 
           kontrak_sewa(
+            id_kontrak,
             status_kontrak,
-            penyewa(nama)
+            penyewa(
+              id_penyewa,
+              nama
+            )
           )
         `);
+      
       error = e;
       
-      // Post-process to ensure status_unit is consistent with contracts
       if (u) {
         data = u.map(item => {
-          const activeContract = Array.isArray(item.kontrak_sewa)
-            ? item.kontrak_sewa.find((k: any) => k.status_kontrak === 'Aktif')
-            : (item.kontrak_sewa?.status_kontrak === 'Aktif' ? item.kontrak_sewa : null);
+          const contracts = Array.isArray(item.kontrak_sewa) ? item.kontrak_sewa : (item.kontrak_sewa ? [item.kontrak_sewa] : []);
+          const activeContract = contracts.find((k: any) => k.status_kontrak === 'Aktif');
           
           return {
-            ...item,
+            id_unit: item.id_unit,
+            unit: item.kode_unit,
+            jenis_unit: item.jenis_unit,
+            harga_sewa: item.harga_sewa,
             status_unit: activeContract ? 'Terisi' : 'Kosong',
-            // Keep the kontrak_sewa for the frontend to use
-            kontrak_sewa: activeContract
+            penyewa: activeContract?.penyewa?.nama || null,
+            id_kontrak: activeContract?.id_kontrak || null,
+            id_penyewa: activeContract?.penyewa?.id_penyewa || null
           };
         });
       }
