@@ -36,12 +36,17 @@ export async function GET(
     let error = null;
 
     if (jenis === 'occupancy') {
-      const { data: units, error: e } = await supabase.from('unit').select('status_unit, jenis_unit');
+      const { data: units, error: e } = await supabase.from('unit').select('jenis_unit, kontrak_sewa(status_kontrak)');
       error = e;
       const occupancyObj = units?.reduce((acc, u) => {
         if (!acc[u.jenis_unit]) acc[u.jenis_unit] = { jenis_unit: u.jenis_unit, total: 0, terisi: 0, kosong: 0 };
         acc[u.jenis_unit].total++;
-        if (u.status_unit === 'Terisi') acc[u.jenis_unit].terisi++;
+        
+        const hasActiveContract = Array.isArray(u.kontrak_sewa) 
+          ? u.kontrak_sewa.some((k: any) => k.status_kontrak === 'Aktif')
+          : (u.kontrak_sewa?.status_kontrak === 'Aktif');
+
+        if (hasActiveContract) acc[u.jenis_unit].terisi++;
         else acc[u.jenis_unit].kosong++;
         return acc;
       }, {} as any);
@@ -74,9 +79,35 @@ export async function GET(
       error = e;
       data = k;
     } else if (jenis === 'unit') {
-      const { data: u, error: e } = await supabase.from('unit').select('kode_unit, jenis_unit, harga_sewa, status_unit, kontrak_sewa(penyewa(nama))').eq('kontrak_sewa.status_kontrak', 'Aktif');
+      const { data: u, error: e } = await supabase
+        .from('unit')
+        .select(`
+          kode_unit, 
+          jenis_unit, 
+          harga_sewa, 
+          status_unit, 
+          kontrak_sewa(
+            status_kontrak,
+            penyewa(nama)
+          )
+        `);
       error = e;
-      data = u;
+      
+      // Post-process to ensure status_unit is consistent with contracts
+      if (u) {
+        data = u.map(item => {
+          const activeContract = Array.isArray(item.kontrak_sewa)
+            ? item.kontrak_sewa.find((k: any) => k.status_kontrak === 'Aktif')
+            : (item.kontrak_sewa?.status_kontrak === 'Aktif' ? item.kontrak_sewa : null);
+          
+          return {
+            ...item,
+            status_unit: activeContract ? 'Terisi' : 'Kosong',
+            // Keep the kontrak_sewa for the frontend to use
+            kontrak_sewa: activeContract
+          };
+        });
+      }
     } else {
       return NextResponse.json({ message: 'Jenis laporan tidak ditemukan' }, { status: 404 });
     }

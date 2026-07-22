@@ -14,11 +14,23 @@ export async function GET(request: Request) {
     const tahunIni = `${now.getFullYear()}`;
     const periodeBulanIni = `${bulanIni}-${tahunIni}`;
 
-    // 1. Data Unit
-    const { data: units, error: unitError } = await supabase.from('unit').select('status_unit, jenis_unit');
+    // 1. Data Unit & Kontrak for Occupancy Source of Truth
+    const { data: units, error: unitError } = await supabase.from('unit').select('id_unit, status_unit, jenis_unit, kontrak_sewa(status_kontrak)');
     if (unitError) throw unitError;
-    const total_unit = units?.length || 0;
-    const unit_terisi = units?.filter(u => u.status_unit === 'Terisi').length || 0;
+
+    const processedUnits = units?.map(u => {
+      const hasActiveContract = Array.isArray(u.kontrak_sewa)
+        ? u.kontrak_sewa.some((k: any) => k.status_kontrak === 'Aktif')
+        : (u.kontrak_sewa?.status_kontrak === 'Aktif');
+      
+      return {
+        ...u,
+        is_occupied: hasActiveContract
+      };
+    }) || [];
+
+    const total_unit = processedUnits.length;
+    const unit_terisi = processedUnits.filter(u => u.is_occupied).length;
     const unit_kosong = total_unit - unit_terisi;
 
     // 2. Data Penyewa & Kontrak
@@ -40,10 +52,10 @@ export async function GET(request: Request) {
       .reduce((sum, p) => sum + (p.nominal || 0), 0) || 0;
 
     // 4. Occupancy per Jenis
-    const occupancy_per_jenis = units?.reduce((acc, unit) => {
+    const occupancy_per_jenis = processedUnits.reduce((acc, unit) => {
       if (!acc[unit.jenis_unit]) acc[unit.jenis_unit] = { total: 0, terisi: 0 };
       acc[unit.jenis_unit].total++;
-      if (unit.status_unit === 'Terisi') acc[unit.jenis_unit].terisi++;
+      if (unit.is_occupied) acc[unit.jenis_unit].terisi++;
       return acc;
     }, {} as any);
 
