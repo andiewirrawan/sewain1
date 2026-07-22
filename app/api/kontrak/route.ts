@@ -65,18 +65,18 @@ export async function POST(request: Request) {
 
     const nomor_kontrak = await generateNomorKontrak(tanggal_masuk);
 
+    const payload = {
+      nomor_kontrak,
+      id_unit,
+      id_penyewa,
+      tanggal_masuk,
+      tanggal_jatuh_tempo: Number(tanggal_jatuh_tempo),
+      status_kontrak: 'Aktif'
+    };
+
     const { data: kontrakData, error } = await supabase
       .from('kontrak_sewa')
-      .insert([
-        {
-          nomor_kontrak,
-          id_unit,
-          id_penyewa,
-          tanggal_masuk,
-          tanggal_jatuh_tempo,
-          status_kontrak: 'Aktif'
-        }
-      ])
+      .insert([payload])
       .select()
       .single();
 

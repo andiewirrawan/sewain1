@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS kontrak_sewa (
   nomor_kontrak TEXT NOT NULL,
   tanggal_masuk DATE NOT NULL,
   tanggal_keluar DATE,
-  tanggal_jatuh_tempo DATE NOT NULL,
+  tanggal_jatuh_tempo INT NOT NULL,
   status_kontrak TEXT NOT NULL DEFAULT 'Aktif' -- 'Aktif' or 'Selesai'
 );
 

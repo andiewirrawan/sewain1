@@ -58,7 +58,7 @@ export async function PUT(request: Request, context: any) {
     const updatePayload: any = {};
     if (body.status_kontrak) updatePayload.status_kontrak = body.status_kontrak;
     if (body.tanggal_keluar) updatePayload.tanggal_keluar = body.tanggal_keluar;
-    if (body.tanggal_jatuh_tempo) updatePayload.tanggal_jatuh_tempo = body.tanggal_jatuh_tempo;
+    if (body.tanggal_jatuh_tempo) updatePayload.tanggal_jatuh_tempo = Number(body.tanggal_jatuh_tempo);
 
     const { data, error } = await supabase
       .from('kontrak_sewa')
