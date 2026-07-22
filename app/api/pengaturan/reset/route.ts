@@ -10,15 +10,22 @@ export async function POST(request: Request) {
   const { konfirmasi } = await request.json();
   if (konfirmasi !== 'HAPUS SEMUA DATA') return NextResponse.json({ message: 'Konfirmasi salah' }, { status: 400 });
 
-  const tables = ['pembayaran', 'kontrak_sewa', 'penyewa', 'unit'];
+  const tables = [
+    { name: 'pembayaran', idField: 'id_pembayaran' },
+    { name: 'kontrak_sewa', idField: 'id_kontrak' },
+    { name: 'penyewa', idField: 'id_penyewa' },
+    { name: 'unit', idField: 'id_unit' }
+  ];
+
   const ringkasan: any = {};
 
   for (const table of tables) {
-    const { count } = await supabase.from(table).select('*', { count: 'exact', head: true });
-    ringkasan[table] = count;
-    await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Assuming ID field exists and delete all
+    const { count } = await supabase.from(table.name).select('*', { count: 'exact', head: true });
+    ringkasan[table.name] = count;
+    // Delete all records by matching all IDs that are not a non-existent UUID
+    await supabase.from(table.name).delete().neq(table.idField, '00000000-0000-0000-0000-000000000000');
   }
 
-  await catatAuditLog(user, 'Delete', 'RESET_ALL', 'all', ringkasan, null);
+  await catatAuditLog(user, 'RESET_ALL', 'all', 'all', ringkasan, null);
   return NextResponse.json({ message: 'Data berhasil direset' });
 }

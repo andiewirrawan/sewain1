@@ -113,15 +113,15 @@ export default function Sidebar() {
           {/* Menu Pengaturan khusus Owner */}
           {user?.role === 'Owner' && (
             <Link
-              href="/settings"
+              href="/pengaturan"
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
-                pathname === '/settings' 
+                pathname === '/pengaturan' 
                   ? "bg-slate-800/50 text-blue-400" 
                   : "text-slate-400 hover:text-white hover:bg-slate-800/30"
               )}
             >
-              <Settings size={18} className={cn(pathname === '/settings' ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
+              <Settings size={18} className={cn(pathname === '/pengaturan' ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
               <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>
                 Pengaturan
               </span>
