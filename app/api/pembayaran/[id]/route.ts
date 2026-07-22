@@ -13,6 +13,7 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     console.log("========== DETAIL PEMBAYARAN ==========");
     console.log("ID:", id);
 
