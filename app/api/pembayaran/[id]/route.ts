@@ -15,6 +15,8 @@ export async function GET(
 
     const { id } = await params;
 
+    console.log("params.id =", id);
+
     const { data, error } = await supabase
       .from('pembayaran')
       .select(`
@@ -27,6 +29,9 @@ export async function GET(
       `)
       .eq('id_pembayaran', id)
       .single();
+
+    console.log("result =", data);
+    console.log("error =", error);
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: 404 });
