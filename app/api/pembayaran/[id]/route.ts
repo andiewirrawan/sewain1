@@ -13,8 +13,8 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
-    console.log("Fetching payment Detail. ID =", id);
+    console.log("========== DETAIL PEMBAYARAN ==========");
+    console.log("ID:", id);
 
     // 1. Fetch pembayaran
     const { data: pembayaran, error: pembayaranError } = await supabase
@@ -23,11 +23,12 @@ export async function GET(
       .eq('id_pembayaran', id)
       .single();
 
+    if (pembayaranError) console.error("Error fetching pembayaran:", pembayaranError);
+    console.log("Pembayaran:", pembayaran);
+
     if (pembayaranError || !pembayaran) {
-      console.error("Error fetching pembayaran:", pembayaranError);
       return NextResponse.json({ message: 'Pembayaran tidak ditemukan' }, { status: 404 });
     }
-    console.log("pembayaran =", pembayaran);
 
     // 2. Fetch kontrak
     const { data: kontrak, error: kontrakError } = await supabase
@@ -36,33 +37,36 @@ export async function GET(
       .eq('id_kontrak', pembayaran.id_kontrak)
       .single();
 
-    if (kontrakError || !kontrak) {
-      console.error("Error fetching kontrak:", kontrakError);
-    }
-    console.log("kontrak =", kontrak);
+    if (kontrakError) console.error("Error fetching kontrak:", kontrakError);
+    console.log("Kontrak:", kontrak);
 
     // 3. Fetch unit & penyewa (if kontrak exists)
     let unit = null;
     let penyewa = null;
 
     if (kontrak) {
-        const { data: uData } = await supabase.from('unit').select('*').eq('id_unit', kontrak.id_unit).single();
+        const { data: uData, error: unitError } = await supabase.from('unit').select('*').eq('id_unit', kontrak.id_unit).single();
         unit = uData;
-        console.log("unit =", unit);
+        if (unitError) console.error("Error fetching unit:", unitError);
+        console.log("Unit:", unit);
 
-        const { data: pData } = await supabase.from('penyewa').select('*').eq('id_penyewa', kontrak.id_penyewa).single();
+        const { data: pData, error: penyewaError } = await supabase.from('penyewa').select('*').eq('id_penyewa', kontrak.id_penyewa).single();
         penyewa = pData;
-        console.log("penyewa =", penyewa);
+        if (penyewaError) console.error("Error fetching penyewa:", penyewaError);
+        console.log("Penyewa:", penyewa);
     }
 
-    return NextResponse.json({
+    const response = {
       ...pembayaran,
       kontrak_sewa: kontrak ? {
           ...kontrak,
           unit,
           penyewa
       } : null
-    });
+    };
+    
+    console.log("Response:", response);
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error("API Error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
