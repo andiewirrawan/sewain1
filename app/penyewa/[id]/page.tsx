@@ -29,6 +29,7 @@ export default function DetailPenyewaPage() {
 
       if (!resPenyewa.ok) throw new Error('Gagal mengambil data penyewa');
       const data = await resPenyewa.json();
+      console.log('API Response:', data);
       setPenyewa(data);
 
       if (resRiwayat.ok) {

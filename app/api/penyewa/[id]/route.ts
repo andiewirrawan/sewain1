@@ -29,8 +29,10 @@ export async function GET(request: Request, context: any) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
 
+    console.log('Data Penyewa dari DB:', data);
     return NextResponse.json(data);
   } catch (error: any) {
+    console.error('Supabase GET error:', error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
@@ -46,6 +48,7 @@ export async function PUT(request: Request, context: any) {
     }
 
     const body = await request.json();
+    console.log('Update Body:', body);
     
     // Get existing data for audit log
     const { data: oldData, error: fetchError } = await supabase
@@ -65,7 +68,7 @@ export async function PUT(request: Request, context: any) {
         nik: body.nik,
         alamat: body.alamat,
         whatsapp: body.whatsapp,
-        kontak_darurat: body.kontrak_darurat,
+        kontak_darurat: body.kontak_darurat,
         jenis_usaha: body.jenis_usaha
       })
       .eq('id_penyewa', id)
@@ -73,9 +76,11 @@ export async function PUT(request: Request, context: any) {
       .single();
 
     if (error) {
+      console.error('Supabase PUT error:', error);
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
+    console.log('Data Penyewa berhasil diupdate:', data);
     await catatAuditLog(user, 'UPDATE', 'penyewa', id, oldData, data);
 
     return NextResponse.json(data);
