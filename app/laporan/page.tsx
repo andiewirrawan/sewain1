@@ -1,15 +1,26 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
 
 export default function LaporanPage() {
   const [jenis, setJenis] = useState('occupancy');
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLaporan = async () => {
-    const res = await fetch(`/api/laporan/${jenis}`);
-    const json = await res.json();
-    setData(json);
+    setLoading(true);
+    setError(null);
+    setData(null);
+    try {
+      const res = await fetch(`/api/laporan/${jenis}`);
+      if (!res.ok) throw new Error('Gagal mengambil data laporan');
+      const json = await res.json();
+      setData(Array.isArray(json) ? json : (json ? [json] : []));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchLaporan(); }, [jenis]);
@@ -32,7 +43,31 @@ export default function LaporanPage() {
       </div>
 
       <div className="bg-white p-4 rounded shadow">
-        <pre className="text-xs">{JSON.stringify(data, null, 2)}</pre>
+        {loading && <p>Memuat data...</p>}
+        {error && <p className="text-red-500">Error: {error}</p>}
+        {!loading && !error && (!data || data.length === 0) && <p>Belum ada data</p>}
+        {!loading && !error && data && data.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {Object.keys(data[0]).map((key) => (
+                    <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{key}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {data.map((item, i) => (
+                  <tr key={i}>
+                    {Object.values(item).map((val: any, j) => (
+                      <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
