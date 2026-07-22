@@ -25,7 +25,12 @@ export default function PembayaranDetail() {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const res = await fetch(`/api/pembayaran/${params.id}`);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/pembayaran/${params.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!res.ok) throw new Error('Gagal mengambil detail pembayaran');
         const json = await res.json();
         setData(json);
