@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Building2, User, History, Receipt, BarChart, AlertCircle, Clock } from 'lucide-react';
-import { formatRupiah } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function DetailUnitPage() {
@@ -189,13 +189,9 @@ export default function DetailUnitPage() {
                     riwayat.riwayat_kontrak.map((k: any) => (
                       <tr key={k.id_kontrak} className="hover:bg-slate-50 transition-colors">
                         <td className="px-5 py-3 font-medium text-slate-900">{k.penyewa?.nama}</td>
-                        <td className="px-5 py-3 text-slate-600">{k.tanggal_masuk} s/d {k.tanggal_keluar || 'Sekarang'}</td>
+                        <td className="px-5 py-3 text-slate-600">{formatTanggal(k.tanggal_masuk)} s/d {k.tanggal_keluar ? formatTanggal(k.tanggal_keluar) : 'Sekarang'}</td>
                         <td className="px-5 py-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            k.status_kontrak === 'Aktif' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {k.status_kontrak}
-                          </span>
+                          {formatStatus(k.status_kontrak)}
                         </td>
                       </tr>
                     ))

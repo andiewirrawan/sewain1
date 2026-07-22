@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2, User, Calendar, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { formatTanggal, formatRupiah } from '@/lib/format';
+import { formatTanggal, formatRupiah, formatStatus, safeValue } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function DetailKontrakPage() {
@@ -76,12 +76,7 @@ export default function DetailKontrakPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">{kontrak.nomor_kontrak}</h1>
           <div className="flex items-center mt-1 space-x-2">
-            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-              kontrak.status_kontrak === 'Aktif' ? 'bg-green-100 text-green-800' : 
-              kontrak.status_kontrak === 'Selesai' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {kontrak.status_kontrak}
-            </span>
+            {formatStatus(kontrak.status_kontrak)}
             <span className="text-sm text-gray-500">
               Dibuat pada {formatTanggal(kontrak.tanggal_masuk)}
             </span>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Edit, ChevronRight, Eye } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { formatStatus } from '@/lib/format';
 
 export default function PenyewaPage() {
   const router = useRouter();
@@ -157,11 +158,7 @@ export default function PenyewaPage() {
                       <div className="text-sm text-gray-900">{p.unit_saat_ini}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        p.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {p.status}
-                      </span>
+                      {formatStatus(p.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

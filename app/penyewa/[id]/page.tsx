@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
 
 export default function DetailPenyewaPage() {
   const { id } = useParams();
@@ -133,7 +134,7 @@ export default function DetailPenyewaPage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-xl">
                 <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Bayar</p>
-                <p className="text-sm font-bold text-gray-900">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(riwayat?.summary?.total_pembayaran || 0)}</p>
+                <p className="text-sm font-bold text-gray-900">{formatRupiah(riwayat?.summary?.total_pembayaran || 0)}</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-xl">
                 <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Tunggakan</p>
@@ -160,7 +161,7 @@ export default function DetailPenyewaPage() {
                         {kontrak.unit?.kode_unit}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Masuk: {kontrak.tanggal_masuk} | Jatuh Tempo: Tgl {kontrak.tanggal_jatuh_tempo}
+                        Masuk: {formatTanggal(kontrak.tanggal_masuk)} | Jatuh Tempo: Tgl {kontrak.tanggal_jatuh_tempo}
                       </p>
                     </div>
                     <Link
@@ -193,11 +194,9 @@ export default function DetailPenyewaPage() {
                     riwayat.riwayat_kontrak.map((k: any) => (
                       <tr key={k.id_kontrak}>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{k.unit?.kode_unit}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{k.tanggal_masuk} - {k.tanggal_keluar || 'Sekarang'}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500">{formatTanggal(k.tanggal_masuk)} - {k.tanggal_keluar ? formatTanggal(k.tanggal_keluar) : 'Sekarang'}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${k.status_kontrak === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {k.status_kontrak}
-                          </span>
+                          {formatStatus(k.status_kontrak)}
                         </td>
                       </tr>
                     ))
@@ -230,9 +229,7 @@ export default function DetailPenyewaPage() {
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.periode}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{p.kontrak_sewa?.unit?.kode_unit}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${p.status_pembayaran === 'Lunas' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                            {p.status_pembayaran}
-                          </span>
+                          {formatStatus(p.status_pembayaran)}
                         </td>
                       </tr>
                     ))

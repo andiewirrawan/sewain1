@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { formatRupiah } from '@/lib/format';
 
 export default function TambahKontrakPage() {
   const router = useRouter();
@@ -92,7 +93,7 @@ export default function TambahKontrakPage() {
               <option value="">-- Pilih Unit Kosong --</option>
               {units.map((u) => (
                 <option key={u.id_unit} value={u.id_unit}>
-                  {u.kode_unit} (Rp {u.harga_sewa.toLocaleString('id-ID')})
+                  {u.kode_unit} ({formatRupiah(u.harga_sewa)})
                 </option>
               ))}
             </select>

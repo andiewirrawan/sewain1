@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Eye, FileText, ChevronRight } from 'lucide-react';
-import { formatTanggal } from '@/lib/format';
+import { formatTanggal, formatStatus, safeValue } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function KontrakPage() {
@@ -155,11 +155,11 @@ export default function KontrakPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{k.penyewa?.nama}</div>
-                      <div className="text-xs text-gray-500">{k.penyewa?.whatsapp}</div>
+                      <div className="text-sm text-gray-900">{k.penyewa?.nama || '-'}</div>
+                      <div className="text-xs text-gray-500">{k.penyewa?.whatsapp || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{k.unit?.kode_unit}</div>
+                      <div className="text-sm text-gray-900">{k.unit?.kode_unit || '-'}</div>
                       
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -167,12 +167,7 @@ export default function KontrakPage() {
                       <div className="text-xs text-gray-500">Keluar: {k.tanggal_keluar ? formatTanggal(k.tanggal_keluar) : '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        k.status_kontrak === 'Aktif' ? 'bg-green-100 text-green-800' : 
-                        k.status_kontrak === 'Selesai' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {k.status_kontrak}
-                      </span>
+                      {formatStatus(k.status_kontrak)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

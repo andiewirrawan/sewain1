@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { formatTanggal, formatRupiah } from '@/lib/format';
+import { formatTanggal, formatRupiah, safeValue } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function LaporanPage() {
@@ -23,7 +23,29 @@ export default function LaporanPage() {
         throw new Error(`Gagal mengambil data laporan (HTTP ${res.status})`);
       }
       const json = await res.json();
-      setData(Array.isArray(json) ? json : (json ? [json] : []));
+      
+      // Flatten relations
+      const flattenedData = (Array.isArray(json) ? json : (json ? [json] : [])).map(item => {
+          let flat: any = { ...item };
+          if (flat.unit) {
+             flat.unit = flat.unit.kode_unit || flat.unit;
+          }
+          if (flat.penyewa) {
+             flat.penyewa = flat.penyewa.nama || flat.penyewa;
+          }
+          if (flat.kontrak_sewa) {
+             flat.unit = flat.kontrak_sewa.unit?.kode_unit || '-';
+             flat.penyewa = flat.kontrak_sewa.penyewa?.nama || '-';
+             delete flat.kontrak_sewa;
+          }
+          // specific field formatting
+          Object.keys(flat).forEach(k => {
+             if (k.startsWith('tanggal')) flat[k] = formatTanggal(flat[k]);
+             if (k === 'nominal' || k === 'harga_sewa' || k === 'total_tagihan') flat[k] = formatRupiah(flat[k]);
+          });
+          return flat;
+      });
+      setData(flattenedData);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -113,7 +135,7 @@ export default function LaporanPage() {
                   <tr key={i}>
                     {Object.entries(item).map(([key, val]: any, j) => (
                       <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                        {safeValue(val)}
                       </td>
                     ))}
                   </tr>

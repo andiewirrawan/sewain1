@@ -114,7 +114,7 @@ export default function DashboardPage() {
                 <tr key={k.nomor_kontrak}>
                   <td className="px-5 py-3">{k.penyewa?.nama}</td>
                   <td className="px-5 py-3">{k.unit?.kode_unit}</td>
-                  <td className="px-5 py-3">{k.tanggal_jatuh_tempo}</td>
+                  <td className="px-5 py-3">Tgl {k.tanggal_jatuh_tempo}</td>
                 </tr>
               ))}
             </tbody>

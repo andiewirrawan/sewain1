@@ -41,5 +41,9 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
     throw new Error('Akses ditolak (HTTP 403).');
   }
 
+  if (response.status >= 500) {
+    throw new Error(`Terjadi kesalahan server (HTTP ${response.status}).`);
+  }
+
   return response;
 }

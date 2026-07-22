@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Edit, Eye } from 'lucide-react';
-import { formatRupiah } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function UnitPage() {
@@ -160,12 +160,10 @@ export default function UnitPage() {
                     <td className="px-6 py-4 text-slate-600">{unit.jenis_unit}</td>
                     <td className="px-6 py-4 font-medium text-slate-800">{formatRupiah(unit.harga_sewa)}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase ${statusColor(unit.status_unit)}`}>
-                        {unit.status_unit}
-                      </span>
+                      {formatStatus(unit.status_unit)}
                     </td>
                     <td className="px-6 py-4 text-slate-600">{unit.penyewa_aktif || '-'}</td>
-                    <td className="px-6 py-4 text-slate-600">{unit.jatuh_tempo ? `Tgl ${unit.jatuh_tempo}` : '-'}</td>
+                    <td className="px-6 py-4 text-slate-600">{unit.jatuh_tempo ? formatTanggal(unit.jatuh_tempo) : '-'}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button 

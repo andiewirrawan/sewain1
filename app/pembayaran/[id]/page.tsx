@@ -15,7 +15,7 @@ import {
   Clock,
   Printer
 } from 'lucide-react';
-import { formatRupiah, formatTanggal } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
 
 export default function PembayaranDetail() {
   const router = useRouter();
@@ -42,19 +42,6 @@ export default function PembayaranDetail() {
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat detail...</div>;
   if (!data) return <div className="p-8 text-center text-red-500">Data tidak ditemukan</div>;
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Lunas':
-        return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2"><CheckCircle2 size={16}/> Lunas</span>;
-      case 'Belum Bayar':
-        return <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2"><AlertCircle size={16}/> Belum Bayar</span>;
-      case 'Terlambat':
-        return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-2"><Clock size={16}/> Terlambat</span>;
-      default:
-        return <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-semibold">{status}</span>;
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -85,7 +72,7 @@ export default function PembayaranDetail() {
             <div className="text-right">
               <div className="text-sm text-slate-400 uppercase tracking-widest font-semibold">Status</div>
               <div className="mt-2 inline-block">
-                {getStatusBadge(data.status_pembayaran)}
+                {formatStatus(data.status_pembayaran)}
               </div>
             </div>
           </div>
@@ -134,7 +121,7 @@ export default function PembayaranDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-blue-600/70 font-semibold uppercase">Penyewa</p>
-                    <p className="font-bold text-gray-900">{data.kontrak_sewa?.penyewa?.nama}</p>
+                    <p className="font-bold text-gray-900">{data.kontrak_sewa?.penyewa?.nama || '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -143,17 +130,17 @@ export default function PembayaranDetail() {
                   </div>
                   <div>
                     <p className="text-xs text-blue-600/70 font-semibold uppercase">Unit</p>
-                    <p className="font-bold text-gray-900">{data.kontrak_sewa?.unit?.kode_unit}</p>
+                    <p className="font-bold text-gray-900">{data.kontrak_sewa?.unit?.kode_unit || '-'}</p>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-blue-200 mt-4">
-                  <p className="text-sm text-blue-800">No. Kontrak: <span className="font-mono font-bold">{data.kontrak_sewa?.nomor_kontrak}</span></p>
+                  <p className="text-sm text-blue-800">No. Kontrak: <span className="font-mono font-bold">{data.kontrak_sewa?.nomor_kontrak || '-'}</span></p>
                 </div>
               </div>
             </section>
 
             <div className="text-center p-8 border-2 border-dashed border-gray-100 rounded-2xl">
-              <p className="text-sm text-gray-400">Pembayaran ini telah dicatat dalam sistem pada {new Date(data.tanggal_bayar).toLocaleString('id-ID')}</p>
+              <p className="text-sm text-gray-400">Pembayaran ini telah dicatat dalam sistem pada {formatTanggal(data.tanggal_bayar)}</p>
             </div>
           </div>
         </div>
