@@ -30,14 +30,14 @@ export async function GET(
     if (jenis === 'occupancy') {
       const { data: units, error: e } = await supabase.from('unit').select('status_unit, jenis_unit');
       error = e;
-      const occupancy = units?.reduce((acc, u) => {
-        if (!acc[u.jenis_unit]) acc[u.jenis_unit] = { total: 0, terisi: 0, kosong: 0 };
+      const occupancyObj = units?.reduce((acc, u) => {
+        if (!acc[u.jenis_unit]) acc[u.jenis_unit] = { jenis_unit: u.jenis_unit, total: 0, terisi: 0, kosong: 0 };
         acc[u.jenis_unit].total++;
         if (u.status_unit === 'Terisi') acc[u.jenis_unit].terisi++;
         else acc[u.jenis_unit].kosong++;
         return acc;
       }, {} as any);
-      data = occupancy;
+      data = Object.values(occupancyObj || {});
     } else if (jenis === 'pendapatan') {
       const { data: p, error: e } = await supabase.from('pembayaran').select('nominal, periode').eq('status_pembayaran', 'Lunas');
       error = e;
