@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 import { catatAuditLog } from '@/lib/audit';
 import { generateNomorKontrak } from '@/lib/kontrak';
+import { getPagination, formatPaginatedResponse } from '@/lib/pagination';
 
 export async function GET(request: Request) {
   try {
@@ -13,6 +14,11 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search');
+
+    const { from, to } = getPagination(page, limit);
 
     let query = supabase
       .from('kontrak_sewa')
@@ -20,20 +26,25 @@ export async function GET(request: Request) {
         *,
         unit (*),
         penyewa (*)
-      `)
-      .order('tanggal_masuk', { ascending: false });
+      `, { count: 'exact' });
 
-    if (status) {
+    if (status && status !== 'Semua') {
       query = query.eq('status_kontrak', status);
     }
 
-    const { data, error } = await query;
+    if (search) {
+      query = query.or(`nomor_kontrak.ilike.%${search}%,penyewa(nama).ilike.%${search}%,unit(kode_unit).ilike.%${search}%`);
+    }
+
+    const { data, count, error } = await query
+      .order('tanggal_masuk', { ascending: false })
+      .range(from, to);
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(formatPaginatedResponse(data, count, page, limit));
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -51,6 +62,18 @@ export async function POST(request: Request) {
 
     if (!id_unit || !id_penyewa || !tanggal_masuk || !tanggal_jatuh_tempo) {
       return NextResponse.json({ message: 'Semua field wajib diisi' }, { status: 400 });
+    }
+
+    // Check if unit already has an active contract
+    const { data: activeContract } = await supabase
+      .from('kontrak_sewa')
+      .select('id_kontrak')
+      .eq('id_unit', id_unit)
+      .eq('status_kontrak', 'Aktif')
+      .maybeSingle();
+    
+    if (activeContract) {
+      return NextResponse.json({ message: 'Unit ini masih memiliki kontrak aktif. Selesaikan kontrak lama terlebih dahulu.' }, { status: 400 });
     }
 
     const { data: unitData, error: errUnit } = await supabase.from('unit').select('*').eq('id_unit', id_unit).single();

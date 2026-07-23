@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Trash2, Edit, Eye } from 'lucide-react';
+import { Plus, Search, Trash2, Edit } from 'lucide-react';
 import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
+import Pagination from '@/components/Pagination';
 
 export default function UnitPage() {
   const router = useRouter();
@@ -13,6 +14,12 @@ export default function UnitPage() {
   const [loading, setLoading] = useState(true);
   const [jenisUnit, setJenisUnit] = useState('Semua');
   const [status, setStatus] = useState('Semua');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   const [user, setUser] = useState<{ role: string } | null>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -28,11 +35,11 @@ export default function UnitPage() {
   const fetchUnits = async () => {
     setLoading(true);
     try {
-      
-      
-      const res = await apiFetch(`/api/unit?jenis_unit=${jenisUnit}&status_unit=${status}`);
-      const data = await res.json();
-      setUnits(data);
+      const res = await apiFetch(`/api/unit?jenis_unit=${jenisUnit}&status_unit=${status}&page=${page}&limit=${limit}&search=${search}`);
+      const json = await res.json();
+      setUnits(json.data || []);
+      setTotal(json.pagination?.total || 0);
+      setTotalPages(json.pagination?.total_pages || 0);
     } catch (error) {
       console.error(error);
     } finally {
@@ -41,17 +48,19 @@ export default function UnitPage() {
   };
 
   useEffect(() => {
+    setPage(1); // Reset to page 1 on filter/search change
+  }, [jenisUnit, status, search, limit]);
+
+  useEffect(() => {
     fetchUnits();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jenisUnit, status]);
+  }, [page, limit, jenisUnit, status, search]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('Apakah Anda yakin ingin menghapus unit ini?')) return;
 
     try {
-      
-
       const res = await apiFetch(`/api/unit/${id}`, {
         method: 'DELETE',
         });
@@ -64,16 +73,6 @@ export default function UnitPage() {
       }
     } catch (error) {
       console.error(error);
-    }
-  };
-
-  const statusColor = (status: string) => {
-    switch (status) {
-      case 'Kosong': return 'bg-emerald-100 text-emerald-700';
-      case 'Terisi': return 'bg-blue-100 text-blue-700';
-      case 'Booking': return 'bg-amber-100 text-amber-700';
-      case 'Renovasi': return 'bg-rose-100 text-rose-700';
-      default: return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -93,7 +92,20 @@ export default function UnitPage() {
         </Link>
       </div>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4 items-end">
+        <div className="space-y-1.5 w-full lg:flex-1">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cari Unit</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Cari berdasarkan kode unit..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+        </div>
         <div className="space-y-1.5 w-full sm:w-auto">
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jenis Unit</label>
           <select 
@@ -190,6 +202,15 @@ export default function UnitPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          limit={limit}
+          onLimitChange={setLimit}
+          total={total}
+        />
       </div>
     </div>
   );

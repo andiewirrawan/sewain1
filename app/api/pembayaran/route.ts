@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
 import { catatAuditLog } from '@/lib/audit';
+import { getPagination, formatPaginatedResponse } from '@/lib/pagination';
 
 export async function GET(request: Request) {
   try {
@@ -14,6 +15,11 @@ export async function GET(request: Request) {
     const bulan = searchParams.get('bulan');
     const tahun = searchParams.get('tahun');
     const status = searchParams.get('status');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search');
+
+    const { from, to } = getPagination(page, limit);
 
     let query = supabase
       .from('pembayaran')
@@ -24,8 +30,7 @@ export async function GET(request: Request) {
           unit (*),
           penyewa (*)
         )
-      `)
-      .order('periode', { ascending: false });
+      `, { count: 'exact' });
 
     if (bulan && tahun) {
       const periode = `${bulan}-${tahun}`;
@@ -38,13 +43,19 @@ export async function GET(request: Request) {
       query = query.eq('status_pembayaran', status);
     }
 
-    const { data, error } = await query;
+    if (search) {
+      query = query.or(`periode.ilike.%${search}%,kontrak_sewa(nomor_kontrak).ilike.%${search}%,kontrak_sewa(penyewa(nama)).ilike.%${search}%`);
+    }
+
+    const { data, count, error } = await query
+      .order('periode', { ascending: false })
+      .range(from, to);
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(formatPaginatedResponse(data, count, page, limit));
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -62,6 +73,18 @@ export async function POST(request: Request) {
 
     if (!id_kontrak || !periode || !tanggal_bayar || !nominal || !status_pembayaran || !metode_pembayaran) {
       return NextResponse.json({ message: 'Field wajib diisi: Kontrak, Periode, Tanggal Bayar, Nominal, Status, Metode' }, { status: 400 });
+    }
+
+    // Explicit duplicate check as requested
+    const { data: existingPayment } = await supabase
+      .from('pembayaran')
+      .select('id_pembayaran')
+      .eq('id_kontrak', id_kontrak)
+      .eq('periode', periode)
+      .maybeSingle();
+
+    if (existingPayment) {
+      return NextResponse.json({ message: 'Pembayaran untuk periode ini sudah ada.' }, { status: 409 });
     }
 
     const { data: pembayaranData, error } = await supabase
@@ -82,7 +105,7 @@ export async function POST(request: Request) {
 
     if (error) {
       if (error.code === '23505') {
-        return NextResponse.json({ message: `Pembayaran untuk periode ${periode} pada kontrak ini sudah ada.` }, { status: 409 });
+        return NextResponse.json({ message: 'Pembayaran untuk periode ini sudah ada.' }, { status: 409 });
       }
       return NextResponse.json({ message: error.message }, { status: 500 });
     }

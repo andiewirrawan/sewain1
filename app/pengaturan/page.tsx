@@ -18,6 +18,7 @@ import {
   PowerOff,
   X
 } from 'lucide-react';
+import Pagination from '@/components/Pagination';
 
 export default function PengaturanPage() {
   const [user, setUser] = useState<{ id: string; nama: string; role: string } | null>(null);
@@ -30,13 +31,17 @@ export default function PengaturanPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [logCount, setLogCount] = useState(0);
   const [logPage, setLogPage] = useState(1);
+  const [logLimit, setLogLimit] = useState(10);
+  const [logTotalPages, setLogTotalPages] = useState(0);
 
   // User list filters & pagination
   const [searchUser, setSearchUser] = useState('');
   const [filterRole, setFilterRole] = useState('Semua');
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [userPage, setUserPage] = useState(1);
-  const usersPerPage = 10;
+  const [userLimit, setUserLimit] = useState(10);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userTotalPages, setUserTotalPages] = useState(0);
 
   // Modal states
   const [showAddUser, setShowAddUser] = useState(false);
@@ -62,51 +67,68 @@ export default function PengaturanPage() {
     if (parsedUser?.role !== 'Owner') {
       router.push('/dashboard');
     } else {
-      fetchAllData();
+      fetchUnits();
     }
   }, [router]);
 
-  const fetchAllData = async () => {
-    setLoading(true);
+  const fetchUnits = async () => {
     try {
-      const [unitsRes, usersRes, logsRes] = await Promise.all([
-        apiFetch('/api/unit'),
-        apiFetch('/api/users'),
-        apiFetch(`/api/audit-log?page=${logPage}`)
-      ]);
-
-      const [unitsData, usersData, logsData] = await Promise.all([
-        unitsRes.json(),
-        usersRes.json(),
-        logsRes.json()
-      ]);
-
-      setUnits(unitsData);
-      setUsers(usersData);
-      setLogs(logsData.data);
-      setLogCount(logsData.count);
+      const res = await apiFetch('/api/unit?limit=1000'); // Get all for tarif list
+      const data = await res.json();
+      setUnits(data.data || []);
     } catch (err) {
-      console.error('Gagal mengambil data:', err);
-    } finally {
-      setLoading(false);
+      console.error('Gagal mengambil data unit:', err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await apiFetch(`/api/users?page=${userPage}&limit=${userLimit}&search=${searchUser}&role=${filterRole}&status=${filterStatus}`);
+      const data = await res.json();
+      setUsers(data.data || []);
+      setUserTotal(data.pagination?.total || 0);
+      setUserTotalPages(data.pagination?.total_pages || 0);
+    } catch (err) {
+      console.error('Gagal mengambil data users:', err);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const res = await apiFetch(`/api/audit-log?page=${logPage}&limit=${logLimit}`);
+      const data = await res.json();
+      setLogs(data.data || []);
+      setLogCount(data.pagination?.total || 0);
+      setLogTotalPages(data.pagination?.total_pages || 0);
+    } catch (err) {
+      console.error('Gagal mengambil logs:', err);
     }
   };
 
   useEffect(() => {
     if (user?.role === 'Owner') {
+      fetchUsers();
+    }
+  }, [userPage, userLimit, searchUser, filterRole, filterStatus]);
+
+  useEffect(() => {
+    if (user?.role === 'Owner') {
       fetchLogs();
     }
-  }, [logPage]);
+  }, [logPage, logLimit]);
 
-  const fetchLogs = async () => {
-    try {
-      const res = await apiFetch(`/api/audit-log?page=${logPage}`);
-      const data = await res.json();
-      setLogs(data.data);
-      setLogCount(data.count);
-    } catch (err) {
-      console.error('Gagal mengambil logs:', err);
-    }
+  useEffect(() => {
+    setUserPage(1);
+  }, [searchUser, filterRole, filterStatus, userLimit]);
+
+  useEffect(() => {
+    setLogPage(1);
+  }, [logLimit]);
+
+  const fetchAllData = () => {
+    fetchUnits();
+    fetchUsers();
+    fetchLogs();
   };
 
   useEffect(() => {
@@ -413,7 +435,7 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {paginatedUsers.map((u) => (
+                {users.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3">
                       <button 
@@ -490,7 +512,7 @@ export default function PengaturanPage() {
                     </td>
                   </tr>
                 ))}
-                {paginatedUsers.length === 0 && (
+                {users.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
                       Tidak ada user yang ditemukan.
@@ -500,25 +522,14 @@ export default function PengaturanPage() {
               </tbody>
             </table>
           </div>
-          {totalUserPages > 1 && (
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
-              <button 
-                disabled={userPage === 1}
-                onClick={() => setUserPage(p => p - 1)}
-                className="px-3 py-1 border border-slate-200 rounded-md disabled:opacity-30 bg-white"
-              >
-                Prev
-              </button>
-              <span className="text-slate-500 font-medium">Halaman {userPage} dari {totalUserPages}</span>
-              <button 
-                disabled={userPage === totalUserPages}
-                onClick={() => setUserPage(p => p + 1)}
-                className="px-3 py-1 border border-slate-200 rounded-md disabled:opacity-30 bg-white"
-              >
-                Next
-              </button>
-            </div>
-          )}
+          <Pagination 
+            currentPage={userPage}
+            totalPages={userTotalPages}
+            onPageChange={setUserPage}
+            limit={userLimit}
+            onLimitChange={setUserLimit}
+            total={userTotal}
+          />
         </section>
 
         {/* Maintenance Tools */}
@@ -613,23 +624,14 @@ export default function PengaturanPage() {
               </tbody>
             </table>
           </div>
-          <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
-            <button 
-              disabled={logPage === 1}
-              onClick={() => setLogPage(p => p - 1)}
-              className="px-3 py-1 border border-slate-200 rounded-md disabled:opacity-30"
-            >
-              Prev
-            </button>
-            <span className="text-slate-500 font-medium">Halaman {logPage}</span>
-            <button 
-              disabled={logs.length < 20}
-              onClick={() => setLogPage(p => p + 1)}
-              className="px-3 py-1 border border-slate-200 rounded-md disabled:opacity-30"
-            >
-              Next
-            </button>
-          </div>
+          <Pagination 
+            currentPage={logPage}
+            totalPages={logTotalPages}
+            onPageChange={setLogPage}
+            limit={logLimit}
+            onLimitChange={setLogLimit}
+            total={logCount}
+          />
         </section>
       </div>
 

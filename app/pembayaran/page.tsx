@@ -6,10 +6,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Plus, 
   Search, 
-  Filter, 
   ChevronRight, 
-  CreditCard,
-  Calendar,
   AlertCircle,
   CheckCircle2,
   Clock,
@@ -17,6 +14,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
+import Pagination from '@/components/Pagination';
 
 const months = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -38,9 +36,12 @@ export default function PembayaranPage() {
   const [selectedStatus, setSelectedStatus] = useState('Semua');
   
   const [userRole, setUserRole] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    fetchPembayaran();
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -48,25 +49,36 @@ export default function PembayaranPage() {
         setUserRole(user.role);
       } catch (e) {}
     }
-  }, [selectedMonth, selectedYear, selectedStatus]);
+  }, []);
 
   const fetchPembayaran = async () => {
     setLoading(true);
     try {
-      let url = `/api/pembayaran?tahun=${selectedYear}`;
+      let url = `/api/pembayaran?tahun=${selectedYear}&page=${page}&limit=${limit}&search=${search}`;
       if (selectedMonth) url += `&bulan=${selectedMonth}`;
       if (selectedStatus !== 'Semua') url += `&status=${selectedStatus}`;
       
       const res = await apiFetch(url);
       if (!res.ok) throw new Error('Gagal mengambil data pembayaran');
-      const data = await res.json();
-      setPembayaran(data);
+      const json = await res.json();
+      setPembayaran(json.data || []);
+      setTotal(json.pagination?.total || 0);
+      setTotalPages(json.pagination?.total_pages || 0);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedMonth, selectedYear, selectedStatus, search, limit]);
+
+  useEffect(() => {
+    fetchPembayaran();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, selectedMonth, selectedYear, selectedStatus, search]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -87,15 +99,6 @@ export default function PembayaranPage() {
       alert('Terjadi kesalahan');
     }
   };
-
-  const filteredData = pembayaran.filter((p) => {
-    const searchLower = search.toLowerCase();
-    const penyewaNama = p.kontrak_sewa?.penyewa?.nama?.toLowerCase() || '';
-    const unitKode = p.kontrak_sewa?.unit?.kode_unit?.toLowerCase() || '';
-    const periode = p.periode?.toLowerCase() || '';
-    
-    return penyewaNama.includes(searchLower) || unitKode.includes(searchLower) || periode.includes(searchLower);
-  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -145,7 +148,7 @@ export default function PembayaranPage() {
         </Link>
       </div>
 
-      <div className="bg-white shadow rounded-lg border border-gray-200">
+      <div className="bg-white shadow rounded-lg border border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
@@ -162,7 +165,7 @@ export default function PembayaranPage() {
             </div>
 
             <select
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
             >
@@ -173,7 +176,7 @@ export default function PembayaranPage() {
             </select>
 
             <select
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
             >
@@ -183,7 +186,7 @@ export default function PembayaranPage() {
             </select>
 
             <select
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
@@ -216,12 +219,12 @@ export default function PembayaranPage() {
                 <tr>
                   <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">Memuat data...</td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : pembayaran.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">Tidak ada data pembayaran</td>
                 </tr>
               ) : (
-                filteredData.map((p) => (
+                pembayaran.map((p) => (
                   <tr 
                     key={p.id_pembayaran} 
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
@@ -267,6 +270,15 @@ export default function PembayaranPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          limit={limit}
+          onLimitChange={setLimit}
+          total={total}
+        />
       </div>
     </div>
   );

@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Trash2, Eye, FileText, ChevronRight } from 'lucide-react';
-import { formatTanggal, formatStatus, safeValue } from '@/lib/format';
+import { Plus, Search, Trash2, FileText, ChevronRight } from 'lucide-react';
+import { formatTanggal, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
+import Pagination from '@/components/Pagination';
 
 export default function KontrakPage() {
   const router = useRouter();
@@ -14,25 +15,40 @@ export default function KontrakPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [userRole, setUserRole] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    fetchKontrak();
     const role = localStorage.getItem('role') || 'Admin';
     setUserRole(role);
   }, []);
 
   const fetchKontrak = async () => {
+    setLoading(true);
     try {
-      const res = await apiFetch('/api/kontrak');
+      const res = await apiFetch(`/api/kontrak?status=${statusFilter}&page=${page}&limit=${limit}&search=${search}`);
       if (!res.ok) throw new Error('Gagal mengambil data kontrak');
-      const data = await res.json();
-      setKontrak(data);
+      const json = await res.json();
+      setKontrak(json.data || []);
+      setTotal(json.pagination?.total || 0);
+      setTotalPages(json.pagination?.total_pages || 0);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, limit]);
+
+  useEffect(() => {
+    fetchKontrak();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, search, statusFilter]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -54,14 +70,6 @@ export default function KontrakPage() {
     }
   };
 
-  const filteredKontrak = kontrak.filter((k) => {
-    const matchSearch = k.nomor_kontrak.toLowerCase().includes(search.toLowerCase()) || 
-                        k.penyewa?.nama.toLowerCase().includes(search.toLowerCase()) ||
-                        k.unit?.kode_unit.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'Semua' ? true : k.status_kontrak === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -78,7 +86,7 @@ export default function KontrakPage() {
         </Link>
       </div>
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-white shadow rounded-lg overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4">
           <div className="relative rounded-md shadow-sm flex-1 max-w-sm">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -135,14 +143,14 @@ export default function KontrakPage() {
                     Memuat data...
                   </td>
                 </tr>
-              ) : filteredKontrak.length === 0 ? (
+              ) : kontrak.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                     Tidak ada data kontrak
                   </td>
                 </tr>
               ) : (
-                filteredKontrak.map((k) => (
+                kontrak.map((k) => (
                   <tr 
                     key={k.id_kontrak} 
                     className="hover:bg-gray-50 cursor-pointer"
@@ -160,7 +168,6 @@ export default function KontrakPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{k.unit?.kode_unit || '-'}</div>
-                      
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">Masuk: {formatTanggal(k.tanggal_masuk)}</div>
@@ -188,6 +195,15 @@ export default function KontrakPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          limit={limit}
+          onLimitChange={setLimit}
+          total={total}
+        />
       </div>
     </div>
   );

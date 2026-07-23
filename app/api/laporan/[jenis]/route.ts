@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserFromRequest } from '@/lib/auth';
+import { getPagination, formatPaginatedResponse } from '@/lib/pagination';
 
 function sanitize(data: any): any {
   if (Array.isArray(data)) return data.map(sanitize);
@@ -21,15 +22,20 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const bulan = searchParams.get('bulan');
     const tahun = searchParams.get('tahun');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const noPagination = searchParams.get('no_pagination') === 'true';
     
     const user = await getUserFromRequest(request as any);
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    let query = supabase.from('pembayaran'); // base query placeholder
+    const { from, to } = getPagination(page, limit);
+
     let data = null;
     let error = null;
+    let totalCount = 0;
 
     if (jenis === 'occupancy') {
       const { data: units, error: e } = await supabase.from('unit').select('jenis_unit, kontrak_sewa(status_kontrak)');
@@ -47,37 +53,56 @@ export async function GET(
         return acc;
       }, {} as any);
       data = Object.values(occupancyObj || {});
+      totalCount = data.length;
     } else if (jenis === 'pendapatan') {
-      let q = supabase.from('pembayaran').select('tanggal_bayar, periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), nominal, metode_pembayaran').eq('status_pembayaran', 'Lunas');
+      let q = supabase.from('pembayaran').select('tanggal_bayar, periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), nominal, metode_pembayaran', { count: 'exact' }).eq('status_pembayaran', 'Lunas');
       if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
       else if (tahun) q = q.ilike('periode', `%-${tahun}`);
-      const { data: p, error: e } = await q;
+      
+      if (!noPagination) q = q.range(from, to);
+      const { data: p, error: e, count } = await q.order('tanggal_bayar', { ascending: false });
       error = e;
       data = p;
+      totalCount = count || 0;
     } else if (jenis === 'tunggakan') {
-      const { data: t, error: e } = await supabase.from('pembayaran').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit), tanggal_jatuh_tempo), periode, nominal, status_pembayaran').in('status_pembayaran', ['Belum Bayar', 'Terlambat']);
+      let q = supabase.from('pembayaran').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit), tanggal_jatuh_tempo), periode, nominal, status_pembayaran', { count: 'exact' }).in('status_pembayaran', ['Belum Bayar', 'Terlambat']);
+      if (!noPagination) q = q.range(from, to);
+      const { data: t, error: e, count } = await q.order('periode', { ascending: false });
       error = e;
       data = t;
+      totalCount = count || 0;
     } else if (jenis === 'pembayaran') {
-      const { data: p, error: e } = await supabase.from('pembayaran').select('periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), tanggal_bayar, nominal, status_pembayaran, metode_pembayaran');
+      let q = supabase.from('pembayaran').select('periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), tanggal_bayar, nominal, status_pembayaran, metode_pembayaran', { count: 'exact' });
+      if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
+      else if (tahun) q = q.ilike('periode', `%-${tahun}`);
+      if (!noPagination) q = q.range(from, to);
+      const { data: p, error: e, count } = await q.order('tanggal_bayar', { ascending: false });
       error = e;
       data = p;
+      totalCount = count || 0;
     } else if (jenis === 'penyewa-aktif') {
-      const { data: p, error: e } = await supabase.from('kontrak_sewa').select('penyewa(nama, whatsapp), unit(kode_unit), tanggal_masuk, status_kontrak').eq('status_kontrak', 'Aktif');
+      let q = supabase.from('kontrak_sewa').select('penyewa(nama, whatsapp), unit(kode_unit), tanggal_masuk, status_kontrak', { count: 'exact' }).eq('status_kontrak', 'Aktif');
+      if (!noPagination) q = q.range(from, to);
+      const { data: p, error: e, count } = await q.order('tanggal_masuk', { ascending: false });
       error = e;
       data = p;
+      totalCount = count || 0;
     } else if (jenis === 'riwayat-penyewa') {
-      const { data: r, error: e } = await supabase.from('kontrak_sewa').select('penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak');
+      let q = supabase.from('kontrak_sewa').select('penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak', { count: 'exact' });
+      if (!noPagination) q = q.range(from, to);
+      const { data: r, error: e, count } = await q.order('tanggal_masuk', { ascending: false });
       error = e;
       data = r;
+      totalCount = count || 0;
     } else if (jenis === 'kontrak') {
-      const { data: k, error: e } = await supabase.from('kontrak_sewa').select('nomor_kontrak, penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak');
+      let q = supabase.from('kontrak_sewa').select('nomor_kontrak, penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak', { count: 'exact' });
+      if (!noPagination) q = q.range(from, to);
+      const { data: k, error: e, count } = await q.order('tanggal_masuk', { ascending: false });
       error = e;
       data = k;
+      totalCount = count || 0;
     } else if (jenis === 'unit') {
-      const { data: u, error: e } = await supabase
-        .from('unit')
-        .select(`
+      let q = supabase.from('unit').select(`
           id_unit,
           kode_unit, 
           jenis_unit, 
@@ -91,9 +116,12 @@ export async function GET(
               nama
             )
           )
-        `);
+        `, { count: 'exact' });
       
+      if (!noPagination) q = q.range(from, to);
+      const { data: u, error: e, count } = await q.order('kode_unit');
       error = e;
+      totalCount = count || 0;
       
       if (u) {
         data = u.map(item => {
@@ -117,7 +145,12 @@ export async function GET(
     }
 
     if (error) throw error;
-    return NextResponse.json(sanitize(data));
+
+    if (noPagination || jenis === 'occupancy') {
+      return NextResponse.json(sanitize(data));
+    }
+
+    return NextResponse.json(formatPaginatedResponse(sanitize(data), totalCount, page, limit));
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

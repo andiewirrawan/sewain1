@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { formatTanggal, formatRupiah, safeValue } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 import { exportToExcel } from '@/lib/excel';
+import Pagination from '@/components/Pagination';
 import { 
   FileSpreadsheet, 
   RefreshCw, 
@@ -40,6 +41,12 @@ export default function LaporanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) setUser(JSON.parse(storedUser));
@@ -50,20 +57,35 @@ export default function LaporanPage() {
     setError(null);
     setData(null);
     try {
-      const query = new URLSearchParams({ bulan, tahun }).toString();
-      const res = await apiFetch(`/api/laporan/${jenis}?${query}`);
+      const queryParams = new URLSearchParams({ 
+        bulan, 
+        tahun, 
+        page: page.toString(), 
+        limit: limit.toString() 
+      });
+      const res = await apiFetch(`/api/laporan/${jenis}?${queryParams.toString()}`);
       if (!res.ok) {
         if (res.status === 401) throw new Error('Unauthorized: Sesi anda telah habis. Silakan login kembali.');
         throw new Error(`Gagal mengambil data laporan (HTTP ${res.status})`);
       }
       const json = await res.json();
-      setRawJson(json);
+      
+      let reportData = [];
+      if (json.pagination) {
+        reportData = json.data || [];
+        setTotal(json.pagination.total);
+        setTotalPages(json.pagination.total_pages);
+      } else {
+        reportData = Array.isArray(json) ? json : (json ? [json] : []);
+        setTotal(reportData.length);
+        setTotalPages(1);
+      }
+      
+      setRawJson(reportData);
       
       // Flatten relations for display
-      const flattenedData = (Array.isArray(json) ? json : (json ? [json] : [])).map(item => {
+      const flattenedData = reportData.map(item => {
           let flat: any = { ...item };
-          
-          // Specific formatting for the table display
           const display: any = {};
           if (jenis === 'occupancy') {
             display['Jenis Unit'] = flat.jenis_unit;
@@ -119,7 +141,6 @@ export default function LaporanPage() {
             display['Status'] = flat.status_unit;
             display['Penyewa Saat Ini'] = flat.penyewa || '-';
           }
-          
           return display;
       });
       setData(flattenedData);
@@ -130,134 +151,153 @@ export default function LaporanPage() {
     }
   };
 
-  useEffect(() => { fetchLaporan(); }, [jenis, bulan, tahun]);
+  useEffect(() => { 
+    setPage(1); 
+  }, [jenis, bulan, tahun, limit]);
+
+  useEffect(() => { 
+    fetchLaporan(); 
+  }, [jenis, bulan, tahun, page, limit]);
 
   const handleExportExcel = async () => {
-    if (!data || data.length === 0) return;
+    setLoading(true);
+    try {
+      const queryParams = new URLSearchParams({ 
+        bulan, 
+        tahun, 
+        no_pagination: 'true' 
+      });
+      const res = await apiFetch(`/api/laporan/${jenis}?${queryParams.toString()}`);
+      const exportJson = await res.json();
+      
+      const reportLabel = REPORT_TYPES.find(r => r.id === jenis)?.label || jenis;
+      const dateStr = new Date().toISOString().split('T')[0];
+      const periodStr = bulan ? `${bulan}-${tahun}` : tahun;
+      
+      let excelHeaders: any[] = [];
+      let excelData = exportJson.map((item: any) => {
+        let flat: any = { ...item };
+        if (typeof flat.unit === 'object' && flat.unit !== null) flat.unit = flat.unit.kode_unit;
+        if (typeof flat.penyewa === 'object' && flat.penyewa !== null) {
+          flat.whatsapp = flat.penyewa.whatsapp;
+          flat.penyewa = flat.penyewa.nama;
+        }
+        if (flat.kontrak_sewa) {
+          const k = flat.kontrak_sewa;
+          flat.unit = k.unit?.kode_unit;
+          flat.penyewa = k.penyewa?.nama;
+          flat.whatsapp = k.penyewa?.whatsapp;
+          flat.jatuh_tempo = k.tanggal_jatuh_tempo;
+        }
+        return flat;
+      });
 
-    const reportLabel = REPORT_TYPES.find(r => r.id === jenis)?.label || jenis;
-    const dateStr = new Date().toISOString().split('T')[0];
-    const periodStr = bulan ? `${bulan}-${tahun}` : tahun;
-    
-    let excelHeaders: any[] = [];
-    let excelData = rawJson.map((item: any) => {
-      let flat: any = { ...item };
-      if (typeof flat.unit === 'object' && flat.unit !== null) flat.unit = flat.unit.kode_unit;
-      if (typeof flat.penyewa === 'object' && flat.penyewa !== null) {
-        flat.whatsapp = flat.penyewa.whatsapp;
-        flat.penyewa = flat.penyewa.nama;
+      let summary: any[] = [];
+
+      if (jenis === 'occupancy') {
+        excelHeaders = [
+          { header: 'Jenis Unit', key: 'jenis_unit' },
+          { header: 'Total Unit', key: 'total' },
+          { header: 'Terisi', key: 'terisi' },
+          { header: 'Kosong', key: 'kosong' },
+        ];
+        const total = excelData.reduce((s: number, i: any) => s + i.total, 0);
+        const terisi = excelData.reduce((s: number, i: any) => s + i.terisi, 0);
+        summary = [
+          { label: 'Total Unit', value: total },
+          { label: 'Total Terisi', value: terisi },
+          { label: 'Persentase', value: `${Math.round((terisi / total) * 100)}%` }
+        ];
+      } else if (jenis === 'pendapatan') {
+        excelHeaders = [
+          { header: 'Tanggal Bayar', key: 'tanggal_bayar', isDate: true },
+          { header: 'Periode', key: 'periode' },
+          { header: 'Penyewa', key: 'penyewa' },
+          { header: 'Unit', key: 'unit' },
+          { header: 'Nominal', key: 'nominal', isCurrency: true },
+          { header: 'Metode', key: 'metode_pembayaran' },
+        ];
+        const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
+        summary = [{ label: 'Total Pendapatan', value: total, isCurrency: true }];
+      } else if (jenis === 'tunggakan') {
+        excelHeaders = [
+          { header: 'Penyewa', key: 'penyewa' },
+          { header: 'Unit', key: 'unit' },
+          { header: 'Periode', key: 'periode' },
+          { header: 'Nominal', key: 'nominal', isCurrency: true },
+          { header: 'Jatuh Tempo', key: 'jatuh_tempo', isDate: true },
+          { header: 'Status', key: 'status_pembayaran' },
+        ];
+        const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
+        summary = [
+          { label: 'Jumlah Tunggakan', value: excelData.length },
+          { label: 'Total Nominal', value: total, isCurrency: true }
+        ];
+      } else if (jenis === 'pembayaran') {
+        excelHeaders = [
+          { header: 'Periode', key: 'periode' },
+          { header: 'Penyewa', key: 'penyewa' },
+          { header: 'Unit', key: 'unit' },
+          { header: 'Tanggal Bayar', key: 'tanggal_bayar', isDate: true },
+          { header: 'Nominal', key: 'nominal', isCurrency: true },
+          { header: 'Status', key: 'status_pembayaran' },
+          { header: 'Metode', key: 'metode_pembayaran' },
+        ];
+        const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
+        summary = [{ label: 'Total Pembayaran', value: total, isCurrency: true }];
+      } else if (jenis === 'penyewa-aktif') {
+        excelHeaders = [
+          { header: 'Nama Penyewa', key: 'penyewa' },
+          { header: 'WhatsApp', key: 'whatsapp' },
+          { header: 'Unit', key: 'unit' },
+          { header: 'Tanggal Masuk', key: 'tanggal_masuk', isDate: true },
+          { header: 'Status', key: 'status_kontrak' },
+        ];
+        summary = [{ label: 'Total Penyewa Aktif', value: excelData.length }];
+      } else if (jenis === 'riwayat-penyewa') {
+        excelHeaders = [
+          { header: 'Nama Penyewa', key: 'penyewa' },
+          { header: 'Unit', key: 'unit' },
+          { header: 'Tanggal Masuk', key: 'tanggal_masuk', isDate: true },
+          { header: 'Tanggal Keluar', key: 'tanggal_keluar', isDate: true },
+          { header: 'Status', key: 'status_kontrak' },
+        ];
+      } else if (jenis === 'kontrak') {
+        excelHeaders = [
+          { header: 'No Kontrak', key: 'nomor_kontrak' },
+          { header: 'Penyewa', key: 'penyewa' },
+          { header: 'Unit', key: 'unit' },
+          { header: 'Tanggal Masuk', key: 'tanggal_masuk', isDate: true },
+          { header: 'Tanggal Keluar', key: 'tanggal_keluar', isDate: true },
+          { header: 'Status', key: 'status_kontrak' },
+        ];
+        summary = [{ label: 'Total Kontrak', value: excelData.length }];
+      } else if (jenis === 'unit') {
+        excelHeaders = [
+          { header: 'Unit', key: 'unit' },
+          { header: 'Jenis Unit', key: 'jenis_unit' },
+          { header: 'Tarif Sewa', key: 'harga_sewa' },
+          { header: 'Status', key: 'status_unit' },
+          { header: 'Penyewa Saat Ini', key: 'penyewa' },
+        ];
+        summary = [{ label: 'Total Unit', value: excelData.length }];
       }
-      if (flat.kontrak_sewa) {
-        const k = flat.kontrak_sewa;
-        flat.unit = k.unit?.kode_unit;
-        flat.penyewa = k.penyewa?.nama;
-        flat.whatsapp = k.penyewa?.whatsapp;
-        flat.jatuh_tempo = k.tanggal_jatuh_tempo;
-      }
-      return flat;
-    });
 
-    let summary: any[] = [];
-
-    if (jenis === 'occupancy') {
-      excelHeaders = [
-        { header: 'Jenis Unit', key: 'jenis_unit' },
-        { header: 'Total Unit', key: 'total' },
-        { header: 'Terisi', key: 'terisi' },
-        { header: 'Kosong', key: 'kosong' },
-      ];
-      const total = excelData.reduce((s: number, i: any) => s + i.total, 0);
-      const terisi = excelData.reduce((s: number, i: any) => s + i.terisi, 0);
-      summary = [
-        { label: 'Total Unit', value: total },
-        { label: 'Total Terisi', value: terisi },
-        { label: 'Persentase', value: `${Math.round((terisi / total) * 100)}%` }
-      ];
-    } else if (jenis === 'pendapatan') {
-      excelHeaders = [
-        { header: 'Tanggal Bayar', key: 'tanggal_bayar', isDate: true },
-        { header: 'Periode', key: 'periode' },
-        { header: 'Penyewa', key: 'penyewa' },
-        { header: 'Unit', key: 'unit' },
-        { header: 'Nominal', key: 'nominal', isCurrency: true },
-        { header: 'Metode', key: 'metode_pembayaran' },
-      ];
-      const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
-      summary = [{ label: 'Total Pendapatan', value: total, isCurrency: true }];
-    } else if (jenis === 'tunggakan') {
-      excelHeaders = [
-        { header: 'Penyewa', key: 'penyewa' },
-        { header: 'Unit', key: 'unit' },
-        { header: 'Periode', key: 'periode' },
-        { header: 'Nominal', key: 'nominal', isCurrency: true },
-        { header: 'Jatuh Tempo', key: 'jatuh_tempo', isDate: true },
-        { header: 'Status', key: 'status_pembayaran' },
-      ];
-      const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
-      summary = [
-        { label: 'Jumlah Tunggakan', value: excelData.length },
-        { label: 'Total Nominal', value: total, isCurrency: true }
-      ];
-    } else if (jenis === 'pembayaran') {
-      excelHeaders = [
-        { header: 'Periode', key: 'periode' },
-        { header: 'Penyewa', key: 'penyewa' },
-        { header: 'Unit', key: 'unit' },
-        { header: 'Tanggal Bayar', key: 'tanggal_bayar', isDate: true },
-        { header: 'Nominal', key: 'nominal', isCurrency: true },
-        { header: 'Status', key: 'status_pembayaran' },
-        { header: 'Metode', key: 'metode_pembayaran' },
-      ];
-      const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
-      summary = [{ label: 'Total Pembayaran', value: total, isCurrency: true }];
-    } else if (jenis === 'penyewa-aktif') {
-      excelHeaders = [
-        { header: 'Nama Penyewa', key: 'penyewa' },
-        { header: 'WhatsApp', key: 'whatsapp' },
-        { header: 'Unit', key: 'unit' },
-        { header: 'Tanggal Masuk', key: 'tanggal_masuk', isDate: true },
-        { header: 'Status', key: 'status_kontrak' },
-      ];
-      summary = [{ label: 'Total Penyewa Aktif', value: excelData.length }];
-    } else if (jenis === 'riwayat-penyewa') {
-      excelHeaders = [
-        { header: 'Nama Penyewa', key: 'penyewa' },
-        { header: 'Unit', key: 'unit' },
-        { header: 'Tanggal Masuk', key: 'tanggal_masuk', isDate: true },
-        { header: 'Tanggal Keluar', key: 'tanggal_keluar', isDate: true },
-        { header: 'Status', key: 'status_kontrak' },
-      ];
-    } else if (jenis === 'kontrak') {
-      excelHeaders = [
-        { header: 'No Kontrak', key: 'nomor_kontrak' },
-        { header: 'Penyewa', key: 'penyewa' },
-        { header: 'Unit', key: 'unit' },
-        { header: 'Tanggal Masuk', key: 'tanggal_masuk', isDate: true },
-        { header: 'Tanggal Keluar', key: 'tanggal_keluar', isDate: true },
-        { header: 'Status', key: 'status_kontrak' },
-      ];
-      summary = [{ label: 'Total Kontrak', value: excelData.length }];
-    } else if (jenis === 'unit') {
-      excelHeaders = [
-        { header: 'Unit', key: 'Unit' },
-        { header: 'Jenis Unit', key: 'Jenis' },
-        { header: 'Tarif Sewa', key: 'Tarif' },
-        { header: 'Status', key: 'Status' },
-        { header: 'Penyewa Saat Ini', key: 'Penyewa Saat Ini' },
-      ];
-      summary = [{ label: 'Total Unit', value: excelData.length }];
+      await exportToExcel({
+        title: `Laporan ${reportLabel}`,
+        reportType: reportLabel,
+        period: periodStr,
+        userName: user?.nama || 'Admin',
+        data: excelData,
+        headers: excelHeaders,
+        summary,
+        fileName: `Laporan_${reportLabel.replace(' ', '_')}_${dateStr}`
+      });
+    } catch (err: any) {
+      alert(`Gagal export: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
-
-    await exportToExcel({
-      title: `Laporan ${reportLabel}`,
-      reportType: reportLabel,
-      period: periodStr,
-      userName: user?.nama || 'Admin',
-      data: excelData,
-      headers: excelHeaders,
-      summary,
-      fileName: `Laporan_${reportLabel.replace(' ', '_')}_${dateStr}`
-    });
   };
 
   const renderSummary = () => {
@@ -278,17 +318,19 @@ export default function LaporanPage() {
         );
     }
     
-    if (jenis === 'pendapatan') {
-        const total = rawJson?.reduce((sum: number, item: any) => sum + (item.nominal || 0), 0);
-        return <SummaryCard label="Total Pendapatan" value={formatRupiah(total)} icon={Wallet} color="emerald" full />;
-    }
-
-    if (jenis === 'tunggakan') {
-        const totalNominal = rawJson?.reduce((sum: number, item: any) => sum + (item.nominal || 0), 0);
+    // For other reports, we might want the total across all data (not just the current page)
+    // But for simplicity in this summary view, we'll show the current page summary or total from API if available
+    
+    if (jenis === 'pendapatan' || jenis === 'pembayaran' || jenis === 'tunggakan') {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SummaryCard label="Jumlah Tunggakan" value={data.length} icon={Clock} color="rose" />
-                <SummaryCard label="Total Nominal" value={formatRupiah(totalNominal)} icon={Wallet} color="rose" />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                <LayoutDashboard size={24} />
+                </div>
+                <div>
+                <div className="text-sm font-medium text-slate-500">Total Records</div>
+                <div className="text-2xl font-bold text-slate-800">{total}</div>
+                </div>
             </div>
         );
     }
@@ -300,7 +342,7 @@ export default function LaporanPage() {
         </div>
         <div>
           <div className="text-sm font-medium text-slate-500">Total Data</div>
-          <div className="text-2xl font-bold text-slate-800">{data.length}</div>
+          <div className="text-2xl font-bold text-slate-800">{total}</div>
         </div>
       </div>
     );
@@ -441,6 +483,18 @@ export default function LaporanPage() {
                 </div>
               )}
             </div>
+            {jenis !== 'occupancy' && data && data.length > 0 && (
+              <div className="mt-4">
+                <Pagination 
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  limit={limit}
+                  onLimitChange={setLimit}
+                  total={total}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

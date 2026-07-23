@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Trash2, Edit, ChevronRight, Eye } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, ChevronRight } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { formatStatus } from '@/lib/format';
+import Pagination from '@/components/Pagination';
 
 export default function PenyewaPage() {
   const router = useRouter();
@@ -13,21 +14,25 @@ export default function PenyewaPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [userRole, setUserRole] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    fetchPenyewa();
-    // Assuming role is in localStorage for client-side check, or we can just try delete and get 403
-    // But ideally we know the role to hide the button. Let's fetch profile or just try parse token
-    const role = localStorage.getItem('role') || 'Admin'; // Fallback
+    const role = localStorage.getItem('role') || 'Admin';
     setUserRole(role);
   }, []);
 
   const fetchPenyewa = async () => {
+    setLoading(true);
     try {
-      const res = await apiFetch('/api/penyewa');
+      const res = await apiFetch(`/api/penyewa?page=${page}&limit=${limit}&search=${search}`);
       if (!res.ok) throw new Error('Gagal mengambil data penyewa');
-      const data = await res.json();
-      setPenyewa(data);
+      const json = await res.json();
+      setPenyewa(json.data || []);
+      setTotal(json.pagination?.total || 0);
+      setTotalPages(json.pagination?.total_pages || 0);
     } catch (error) {
       console.error(error);
     } finally {
@@ -35,8 +40,17 @@ export default function PenyewaPage() {
     }
   };
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, limit]);
+
+  useEffect(() => {
+    fetchPenyewa();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, search]);
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // prevent row click
+    e.stopPropagation();
     if (!confirm('Yakin ingin menghapus penyewa ini?')) return;
 
     try {
@@ -58,11 +72,6 @@ export default function PenyewaPage() {
     }
   };
 
-  const filteredPenyewa = penyewa.filter(
-    (p) => p.nama.toLowerCase().includes(search.toLowerCase()) || 
-           p.whatsapp.includes(search)
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -79,7 +88,7 @@ export default function PenyewaPage() {
         </Link>
       </div>
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-white shadow rounded-lg overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="relative rounded-md shadow-sm max-w-sm">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -88,7 +97,7 @@ export default function PenyewaPage() {
             <input
               type="text"
               className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-              placeholder="Cari nama atau nomor WA..."
+              placeholder="Cari nama, NIK, atau nomor WA..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -129,14 +138,14 @@ export default function PenyewaPage() {
                     Memuat data...
                   </td>
                 </tr>
-              ) : filteredPenyewa.length === 0 ? (
+              ) : penyewa.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                     Tidak ada data penyewa
                   </td>
                 </tr>
               ) : (
-                filteredPenyewa.map((p) => (
+                penyewa.map((p) => (
                   <tr 
                     key={p.id_penyewa} 
                     className="hover:bg-gray-50 cursor-pointer"
@@ -188,6 +197,15 @@ export default function PenyewaPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          limit={limit}
+          onLimitChange={setLimit}
+          total={total}
+        />
       </div>
     </div>
   );
