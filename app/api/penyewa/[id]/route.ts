@@ -29,8 +29,14 @@ export async function GET(request: Request, context: any) {
       return NextResponse.json({ message: error.message }, { status: 404 });
     }
 
-    console.log('Data Penyewa dari DB:', data);
-    return NextResponse.json(data);
+    const activeContracts = data.kontrak_sewa?.filter((k: any) => k.status_kontrak === 'Aktif') || [];
+    const mappedData = {
+      ...data,
+      status: activeContracts.length > 0 ? 'Aktif' : 'Non-aktif'
+    };
+
+    console.log('Data Penyewa dari DB (with dynamic status):', mappedData);
+    return NextResponse.json(mappedData);
   } catch (error: any) {
     console.error('Supabase GET error:', error);
     return NextResponse.json({ message: error.message }, { status: 500 });

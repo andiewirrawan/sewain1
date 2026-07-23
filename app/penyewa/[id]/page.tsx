@@ -63,9 +63,11 @@ export default function DetailPenyewaPage() {
         <Link href="/penyewa" className="text-gray-500 hover:text-gray-700">
           <ArrowLeft className="h-6 w-6" />
         </Link>
-        <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
           <h1 className="text-2xl font-semibold text-gray-900">{penyewa.nama}</h1>
-          <p className="text-sm text-gray-500">Detail informasi penyewa</p>
+          <div className="mt-1 sm:mt-0">
+            {formatStatus(penyewa.status)}
+          </div>
         </div>
       </div>
 
