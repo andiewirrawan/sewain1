@@ -36,10 +36,10 @@ export default function TambahPembayaran() {
 
   const fetchKontrak = async () => {
     try {
-      const res = await apiFetch('/api/kontrak?status=Aktif');
+      const res = await apiFetch('/api/kontrak?status=Aktif&limit=1000');
       if (!res.ok) throw new Error('Gagal mengambil data kontrak');
-      const data = await res.json();
-      setKontrakAktif(data);
+      const json = await res.json();
+      setKontrakAktif(json.data || []);
     } catch (error) {
       console.error(error);
     }

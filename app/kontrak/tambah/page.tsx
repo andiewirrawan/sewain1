@@ -28,13 +28,13 @@ export default function TambahKontrakPage() {
     try {
       const headers = { };
 
-      const resUnit = await apiFetch('/api/unit?status_unit=Kosong', { headers });
-      const dataUnit = await resUnit.json();
-      setUnits(dataUnit);
+      const resUnit = await apiFetch('/api/unit?status_unit=Kosong&limit=1000', { headers });
+      const jsonUnit = await resUnit.json();
+      setUnits(jsonUnit.data || []);
 
-      const resPenyewa = await apiFetch('/api/penyewa', { headers });
-      const dataPenyewa = await resPenyewa.json();
-      setPenyewa(dataPenyewa);
+      const resPenyewa = await apiFetch('/api/penyewa?limit=1000', { headers });
+      const jsonPenyewa = await resPenyewa.json();
+      setPenyewa(jsonPenyewa.data || []);
     } catch (error) {
       console.error(error);
     }
