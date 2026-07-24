@@ -14,7 +14,14 @@ export async function GET(request: Request) {
 
   const { from, to } = getPagination(page, limit);
 
-  let query = supabase.from('audit_log').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, to);
+  let query = supabase
+    .from('audit_log')
+    .select(`
+      *,
+      users:id_user (nama)
+    `, { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to);
   
   if (userId) {
     query = query.eq('id_user', userId);
@@ -22,6 +29,11 @@ export async function GET(request: Request) {
   
   const { data, count, error } = await query;
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
+
+  const mappedData = data?.map(log => ({
+    ...log,
+    user_nama: log.users?.nama || 'System'
+  })) || [];
   
-  return NextResponse.json(formatPaginatedResponse(data || [], count, page, limit));
+  return NextResponse.json(formatPaginatedResponse(mappedData, count, page, limit));
 }

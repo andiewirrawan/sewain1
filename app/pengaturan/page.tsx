@@ -23,6 +23,7 @@ import Pagination from '@/components/Pagination';
 export default function PengaturanPage() {
   const [user, setUser] = useState<{ id: string; nama: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   // State for data
@@ -61,47 +62,80 @@ export default function PengaturanPage() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-    setUser(parsedUser);
-    
-    if (parsedUser?.role !== 'Owner') {
-      router.push('/dashboard');
-    } else {
-      fetchUnits();
+    if (!storedUser) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      
+      if (parsedUser?.role !== 'Owner') {
+        router.push('/dashboard');
+      } else {
+        fetchAllData();
+      }
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+      router.push('/login');
     }
   }, [router]);
 
   const fetchUnits = async () => {
     try {
       const res = await apiFetch('/api/unit?limit=1000'); // Get all for tarif list
+      if (!res.ok) throw new Error('Gagal mengambil data unit');
       const data = await res.json();
       setUnits(data.data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal mengambil data unit:', err);
+      setError(err.message || 'Gagal memuat data unit');
     }
   };
 
   const fetchUsers = async () => {
     try {
       const res = await apiFetch(`/api/users?page=${userPage}&limit=${userLimit}&search=${searchUser}&role=${filterRole}&status=${filterStatus}`);
+      if (!res.ok) throw new Error('Gagal mengambil data users');
       const data = await res.json();
       setUsers(data.data || []);
       setUserTotal(data.pagination?.total || 0);
       setUserTotalPages(data.pagination?.total_pages || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal mengambil data users:', err);
+      setError(err.message || 'Gagal memuat data users');
     }
   };
 
   const fetchLogs = async () => {
     try {
       const res = await apiFetch(`/api/audit-log?page=${logPage}&limit=${logLimit}`);
+      if (!res.ok) throw new Error('Gagal mengambil logs');
       const data = await res.json();
       setLogs(data.data || []);
       setLogCount(data.pagination?.total || 0);
       setLogTotalPages(data.pagination?.total_pages || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Gagal mengambil logs:', err);
+      setError(err.message || 'Gagal memuat logs');
+      setLogs([]);
+    }
+  };
+
+  const fetchAllData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([
+        fetchUnits(),
+        fetchUsers(),
+        fetchLogs()
+      ]);
+    } catch (err) {
+      console.error('Error fetching all data:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -270,18 +304,6 @@ export default function PengaturanPage() {
     }
   };
 
-  const filteredUsers = users.filter(u => {
-    const matchSearch = 
-      u.nama.toLowerCase().includes(searchUser.toLowerCase()) || 
-      u.email.toLowerCase().includes(searchUser.toLowerCase());
-    const matchRole = filterRole === 'Semua' || u.role === filterRole;
-    const matchStatus = filterStatus === 'Semua' || u.status === filterStatus;
-    return matchSearch && matchRole && matchStatus;
-  });
-
-  const paginatedUsers = filteredUsers.slice((userPage - 1) * usersPerPage, userPage * usersPerPage);
-  const totalUserPages = Math.ceil(filteredUsers.length / usersPerPage);
-
   const handleBackup = async () => {
     try {
       const res = await apiFetch('/api/pengaturan/backup');
@@ -324,8 +346,30 @@ export default function PengaturanPage() {
     }
   };
 
-  if (!user || user.role !== 'Owner' || (loading && units.length === 0)) {
+  if (!user || user.role !== 'Owner') {
+    return <div className="p-8 text-center text-slate-500">Memverifikasi akses...</div>;
+  }
+
+  if (loading && units.length === 0 && !error) {
     return <div className="p-8 text-center text-slate-500">Memuat data pengaturan...</div>;
+  }
+
+  if (error && units.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-flex p-4 bg-red-50 rounded-2xl border border-red-100 mb-4">
+          <AlertTriangle className="text-red-600" size={32} />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Gagal Memuat Halaman</h2>
+        <p className="text-slate-500 mb-6">{error}</p>
+        <button 
+          onClick={() => fetchAllData()}
+          className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+        >
+          Coba Lagi
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -358,7 +402,13 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {units.map((unit) => (
+                {units.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-5 py-8 text-center text-slate-500">
+                      Tidak ada data unit.
+                    </td>
+                  </tr>
+                ) : units.map((unit) => (
                   <tr key={unit.id_unit} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3 font-medium text-slate-900">{unit.kode_unit}</td>
                     <td className="px-5 py-3 text-slate-600 font-bold">
@@ -435,7 +485,13 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((u) => (
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
+                      Tidak ada user yang ditemukan.
+                    </td>
+                  </tr>
+                ) : users.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3">
                       <button 
@@ -466,7 +522,9 @@ export default function PengaturanPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="text-slate-600 font-medium">{u.last_login ? new Date(u.last_login).toLocaleString('id-ID') : '-'}</div>
+                      <div className="text-slate-600 font-medium" suppressHydrationWarning>
+                        {u.last_login ? new Date(u.last_login).toLocaleString('id-ID') : '-'}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -512,13 +570,6 @@ export default function PengaturanPage() {
                     </td>
                   </tr>
                 ))}
-                {users.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
-                      Tidak ada user yang ditemukan.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -601,15 +652,23 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {logs.map((log) => (
+                {logs.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-5 py-8 text-center text-slate-500">
+                      Tidak ada data log aktivitas.
+                    </td>
+                  </tr>
+                ) : logs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3">
                       <div className="text-slate-900 font-medium">{formatTanggal(log.created_at)}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{new Date(log.created_at).toLocaleTimeString()}</div>
+                      <div className="text-[10px] text-slate-400 font-mono" suppressHydrationWarning>
+                        {log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                      </div>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="text-slate-700 font-semibold">{log.aktivitas}</div>
-                      <div className="text-[10px] text-slate-500 uppercase">{log.tabel} - {log.user_nama}</div>
+                      <div className="text-slate-700 font-semibold uppercase text-[10px] tracking-wider">{log.aktivitas}</div>
+                      <div className="text-[10px] text-slate-500 uppercase">{log.nama_tabel} - {log.user_nama}</div>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button 
@@ -956,14 +1015,16 @@ export default function PengaturanPage() {
                 ) : userActivities.length > 0 ? (
                   <div className="space-y-4">
                     {userActivities.map((log) => (
-                      <div key={log.id_log} className="flex gap-4 group">
+                      <div key={log.id} className="flex gap-4 group">
                         <div className="flex flex-col items-center">
                           <div className="w-2.5 h-2.5 rounded-full bg-slate-300 mt-2 group-hover:bg-blue-500 transition-colors border-2 border-white ring-2 ring-slate-100 group-hover:ring-blue-100"></div>
                           <div className="w-px flex-1 bg-slate-100 my-1 group-hover:bg-blue-100 transition-colors"></div>
                         </div>
                         <div className="flex-1 pb-4">
-                          <div className="text-[10px] text-slate-400 font-medium">{new Date(log.created_at || log.waktu).toLocaleString('id-ID')}</div>
-                          <div className="font-bold text-slate-800 text-sm mt-0.5">{log.aktivitas}</div>
+                          <div className="text-[10px] text-slate-400 font-medium" suppressHydrationWarning>
+                            {formatTanggal(log.created_at)} {log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''}
+                          </div>
+                          <div className="font-bold text-slate-800 text-sm mt-0.5 uppercase tracking-wide">{log.aktivitas}</div>
                           <div className="flex items-center gap-2 mt-1.5">
                             <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-bold uppercase tracking-tighter">
                               {log.nama_tabel}
