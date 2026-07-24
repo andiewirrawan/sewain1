@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Trash2, Edit, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, ChevronRight, Eye } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { formatStatus } from '@/lib/format';
 import Pagination from '@/components/Pagination';
@@ -20,8 +20,16 @@ export default function PenyewaPage() {
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    const role = localStorage.getItem('role') || 'Admin';
-    setUserRole(role);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setUserRole(user.role || 'Admin');
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        setUserRole('Admin');
+      }
+    }
   }, []);
 
   const fetchPenyewa = async () => {
@@ -174,9 +182,20 @@ export default function PenyewaPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            router.push(`/penyewa/${p.id_penyewa}`);
+                          }}
+                          className="text-gray-600 hover:text-gray-900 p-1"
+                          title="Detail"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             router.push(`/penyewa/${p.id_penyewa}/edit`);
                           }}
                           className="text-blue-600 hover:text-blue-900 p-1"
+                          title="Edit"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -184,6 +203,7 @@ export default function PenyewaPage() {
                           <button
                             onClick={(e) => handleDelete(e, p.id_penyewa)}
                             className="text-red-600 hover:text-red-900 p-1"
+                            title="Hapus"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

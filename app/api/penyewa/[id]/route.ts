@@ -120,15 +120,20 @@ export async function DELETE(request: Request, context: any) {
       return NextResponse.json({ message: 'Penyewa tidak ditemukan' }, { status: 404 });
     }
     
-    // Validate if penyewa has active contracts (should not be deletable if they do, maybe check all contracts)
-    const { data: contracts } = await supabase
+    // Validate if penyewa has active contracts
+    const { data: activeContracts, error: contractError } = await supabase
       .from('kontrak_sewa')
       .select('id_kontrak')
-      .eq('id_penyewa', id);
+      .eq('id_penyewa', id)
+      .eq('status_kontrak', 'Aktif');
       
-    if (contracts && contracts.length > 0) {
+    if (contractError) {
+      console.error('Contract check error:', contractError);
+    }
+      
+    if (activeContracts && activeContracts.length > 0) {
       return NextResponse.json({ 
-        message: 'Tidak dapat menghapus penyewa karena masih memiliki riwayat kontrak' 
+        message: 'Tidak dapat menghapus penyewa karena masih memiliki kontrak Aktif' 
       }, { status: 400 });
     }
 
