@@ -159,12 +159,6 @@ export default function PengaturanPage() {
     setLogPage(1);
   }, [logLimit]);
 
-  const fetchAllData = () => {
-    fetchUnits();
-    fetchUsers();
-    fetchLogs();
-  };
-
   useEffect(() => {
     if (viewingUser) {
       fetchUserActivities(viewingUser.id);
