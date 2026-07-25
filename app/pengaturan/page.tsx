@@ -16,7 +16,8 @@ import {
   Edit2,
   Power,
   PowerOff,
-  X
+  X,
+  Ticket
 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 
@@ -578,6 +579,37 @@ export default function PengaturanPage() {
             onLimitChange={setUserLimit}
             total={userTotal}
           />
+        </section>
+
+        {/* Promo & Diskon */}
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                <Ticket size={20} />
+              </div>
+              <h2 className="font-bold text-slate-800">Promo & Diskon</h2>
+            </div>
+            <button 
+              onClick={() => router.push('/pengaturan/promo')}
+              className="px-4 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 transition-all shadow-md shadow-amber-100 flex items-center gap-2"
+            >
+              Kelola Promo
+            </button>
+          </div>
+          <div className="p-6">
+            <p className="text-sm text-slate-500 mb-4">Atur potongan harga khusus untuk penyewa tertentu dalam periode waktu yang fleksibel.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                <p className="text-[10px] uppercase font-bold text-amber-600 mb-1">Fitur Promo</p>
+                <p className="text-xs text-amber-700 leading-tight">Buat diskon persen atau nominal untuk penyewa.</p>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                <p className="text-[10px] uppercase font-bold text-blue-600 mb-1">Periode</p>
+                <p className="text-xs text-blue-700 leading-tight">Tentukan masa berlaku promo secara otomatis.</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Maintenance Tools */}

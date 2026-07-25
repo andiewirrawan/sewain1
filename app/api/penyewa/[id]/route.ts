@@ -20,6 +20,9 @@ export async function GET(request: Request, context: any) {
         kontrak_sewa (
           *,
           unit (*)
+        ),
+        promo_penyewa (
+          promo (*)
         )
       `)
       .eq('id_penyewa', id)

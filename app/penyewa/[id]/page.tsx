@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin } from 'lucide-react';
+import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin, Ticket } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 export default function DetailPenyewaPage() {
   const { id } = useParams();
@@ -147,6 +148,52 @@ export default function DetailPenyewaPage() {
                 <p className="text-sm font-bold text-blue-600">{riwayat?.summary?.total_lama_menyewa_hari || 0} Hari</p>
               </div>
             </div>
+          </div>
+
+          {/* Promo Aktif */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4 flex items-center gap-2">
+              <Ticket className="h-5 w-5 text-blue-600" />
+              Promo Aktif
+            </h3>
+            {(!penyewa.promo_penyewa || penyewa.promo_penyewa.length === 0) ? (
+              <p className="text-sm text-gray-500">Tidak ada promo aktif untuk penyewa ini.</p>
+            ) : (
+              <div className="space-y-3">
+                {penyewa.promo_penyewa.map((item: any) => {
+                  const p = item.promo;
+                  if (!p) return null;
+                  const isExpired = new Date(p.tanggal_selesai) < new Date();
+                  const isStarted = new Date(p.tanggal_mulai) <= new Date();
+                  const isActive = p.status === 'Aktif' && isStarted && !isExpired;
+                  
+                  return (
+                    <div key={p.id_promo} className={cn(
+                      "p-3 rounded-xl border flex justify-between items-center",
+                      isActive ? "bg-blue-50 border-blue-100" : "bg-gray-50 border-gray-200 opacity-60"
+                    )}>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">{p.nama_promo}</p>
+                        <p className="text-[10px] text-gray-500">
+                          Berlaku: {formatTanggal(p.tanggal_mulai)} - {formatTanggal(p.tanggal_selesai)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-blue-600">
+                          {p.jenis_diskon === 'Persen' ? `${p.nilai_diskon}%` : formatRupiah(p.nilai_diskon)}
+                        </p>
+                        <span className={cn(
+                          "text-[8px] font-bold uppercase px-1.5 py-0.5 rounded",
+                          isActive ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"
+                        )}>
+                          {isActive ? 'Aktif' : (isExpired ? 'Expired' : 'Belum Mulai/Off')}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* 2. Unit Aktif */}

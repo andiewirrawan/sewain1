@@ -9,16 +9,29 @@ import {
   Calendar, 
   FileText, 
   User, 
-  Building2 
+  Building2,
+  Ticket
 } from 'lucide-react';
-import { formatRupiahString, parseRupiahString } from '@/lib/utils';
+import { formatRupiahString, parseRupiahString, cn } from '@/lib/utils';
 import { apiFetch } from '@/lib/api';
+import { formatRupiah } from '@/lib/format';
 
 export default function TambahPembayaran() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [kontrakAktif, setKontrakAktif] = useState<any[]>([]);
   
+  const [activePromo, setActivePromo] = useState<any>(null);
+  const [calculations, setCalculations] = useState({
+    harga_normal: 0,
+    jenis_diskon: '',
+    nilai_diskon: 0,
+    nominal_diskon: 0,
+    total_tagihan: 0,
+    nama_promo_snapshot: '',
+    persentase_snapshot: 0
+  });
+
   const [formData, setFormData] = useState({
     id_kontrak: '',
     periode_bulan: (new Date().getMonth() + 1).toString().padStart(2, '0'),
@@ -45,16 +58,77 @@ export default function TambahPembayaran() {
     }
   };
 
-  const handleKontrakChange = (id: string) => {
+  const handleKontrakChange = async (id: string) => {
     const selected = kontrakAktif.find(k => k.id_kontrak === id);
     if (selected) {
-      setFormData({
-        ...formData,
+      const hargaNormal = selected.unit?.harga_sewa || 0;
+      
+      setFormData(prev => ({
+        ...prev,
         id_kontrak: id,
-        nominal: selected.unit?.harga_sewa?.toString() || ''
-      });
+        nominal: hargaNormal.toString()
+      }));
+
+      // Fetch promo for this tenant
+      try {
+        const res = await apiFetch(`/api/penyewa/${selected.id_penyewa}`);
+        const data = await res.json();
+        
+        // Find active promos based on current date
+        const now = new Date();
+        const activePromos = data.promo_penyewa
+          ?.map((item: any) => item.promo)
+          ?.filter((p: any) => {
+            return p && p.status === 'Aktif' && 
+                   new Date(p.tanggal_mulai) <= now && 
+                   new Date(p.tanggal_selesai) >= now;
+          }) || [];
+        
+        // Sort by priority (descending) then by creation date (descending)
+        const active = activePromos.sort((a: any, b: any) => {
+          if ((b.prioritas || 0) !== (a.prioritas || 0)) {
+            return (b.prioritas || 0) - (a.prioritas || 0);
+          }
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        })[0] || null;
+
+        let nominalDiskon = 0;
+        let persentaseSnapshot = 0;
+
+        if (active) {
+          if (active.jenis_diskon === 'Persen') {
+            nominalDiskon = (hargaNormal * active.nilai_diskon) / 100;
+            persentaseSnapshot = active.nilai_diskon;
+          } else {
+            // Batasi agar diskon nominal tidak melebihi harga sewa
+            nominalDiskon = Math.min(active.nilai_diskon, hargaNormal);
+            persentaseSnapshot = (nominalDiskon / hargaNormal) * 100;
+          }
+        }
+
+        const totalTagihan = Math.max(0, hargaNormal - nominalDiskon);
+
+        setActivePromo(active);
+        setCalculations({
+          harga_normal: hargaNormal,
+          jenis_diskon: active?.jenis_diskon || '',
+          nilai_diskon: active?.nilai_diskon || 0,
+          nominal_diskon: nominalDiskon,
+          total_tagihan: totalTagihan,
+          nama_promo_snapshot: active?.nama_promo || '',
+          persentase_snapshot: persentaseSnapshot
+        });
+
+        setFormData(prev => ({
+          ...prev,
+          nominal: totalTagihan.toString()
+        }));
+      } catch (err) {
+        console.error('Error fetching promo:', err);
+      }
     } else {
-      setFormData({ ...formData, id_kontrak: id });
+      setFormData(prev => ({ ...prev, id_kontrak: id }));
+      setActivePromo(null);
     }
   };
 
@@ -66,7 +140,15 @@ export default function TambahPembayaran() {
       const payload = {
         ...formData,
         periode: `${formData.periode_bulan}-${formData.periode_tahun}`,
-        nominal: parseFloat(formData.nominal) || 0
+        nominal: parseFloat(formData.nominal) || 0,
+        harga_normal: calculations.harga_normal,
+        jenis_diskon: calculations.jenis_diskon,
+        nilai_diskon: calculations.nilai_diskon,
+        nominal_diskon: calculations.nominal_diskon,
+        total_tagihan: calculations.total_tagihan,
+        id_promo: activePromo?.id_promo,
+        nama_promo_snapshot: calculations.nama_promo_snapshot,
+        persentase_snapshot: calculations.persentase_snapshot
       };
       
       // Remove temporary form fields
@@ -245,6 +327,35 @@ export default function TambahPembayaran() {
                 onChange={(e) => setFormData({ ...formData, catatan: e.target.value })}
               ></textarea>
             </div>
+
+            {/* Promo & Discount Summary */}
+            {activePromo && (
+              <div className="col-span-1 md:col-span-2 bg-blue-50 border border-blue-100 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+                  <Ticket size={16} /> Promo Terpasang: {activePromo.nama_promo}
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="flex justify-between border-b border-blue-100 pb-1">
+                    <span className="text-slate-500">Harga Normal:</span>
+                    <span className="font-bold text-slate-700">{formatRupiah(calculations.harga_normal)}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-blue-100 pb-1">
+                    <span className="text-slate-500">Diskon ({activePromo.jenis_diskon}):</span>
+                    <span className="font-bold text-red-600">
+                      {activePromo.jenis_diskon === 'Persen' ? `${activePromo.nilai_diskon}%` : formatRupiah(activePromo.nilai_diskon)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="text-slate-500">Potongan Harga:</span>
+                    <span className="font-bold text-red-600">-{formatRupiah(calculations.nominal_diskon)}</span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="text-blue-700 font-bold">Total Tagihan:</span>
+                    <span className="font-black text-blue-700">{formatRupiah(calculations.total_tagihan)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-6 border-t border-gray-100">

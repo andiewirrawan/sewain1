@@ -16,7 +16,8 @@ import {
   Clock,
   Home,
   LayoutDashboard,
-  History
+  History,
+  Ticket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ const REPORT_TYPES = [
   { id: 'riwayat-penyewa', label: 'Riwayat Penyewa', icon: History, color: 'text-slate-600', bg: 'bg-slate-100' },
   { id: 'kontrak', label: 'Kontrak', icon: LayoutDashboard, color: 'text-orange-600', bg: 'bg-orange-100' },
   { id: 'unit', label: 'Daftar Unit', icon: Home, color: 'text-cyan-600', bg: 'bg-cyan-100' },
+  { id: 'promo', label: 'Promo & Diskon', icon: Ticket, color: 'text-amber-600', bg: 'bg-amber-100' },
 ];
 
 export default function LaporanPage() {
@@ -140,6 +142,13 @@ export default function LaporanPage() {
             display['Tarif'] = formatRupiah(flat.harga_sewa);
             display['Status'] = flat.status_unit;
             display['Penyewa Saat Ini'] = flat.penyewa || '-';
+          } else if (jenis === 'promo') {
+            display['Nama Promo'] = flat.nama_promo;
+            display['Jenis'] = flat.jenis_diskon;
+            display['Nilai'] = flat.jenis_diskon === 'Persen' ? `${flat.nilai_diskon}%` : formatRupiah(flat.nilai_diskon);
+            display['Status'] = flat.status;
+            display['Digunakan'] = flat.jumlah_digunakan || 0;
+            display['Total Potongan'] = formatRupiah(flat.total_potongan || 0);
           }
           return display;
       });
@@ -281,6 +290,17 @@ export default function LaporanPage() {
           { header: 'Penyewa Saat Ini', key: 'penyewa' },
         ];
         summary = [{ label: 'Total Unit', value: excelData.length }];
+      } else if (jenis === 'promo') {
+        excelHeaders = [
+          { header: 'Nama Promo', key: 'nama_promo' },
+          { header: 'Jenis Diskon', key: 'jenis_diskon' },
+          { header: 'Nilai Diskon', key: 'nilai_diskon' },
+          { header: 'Status', key: 'status' },
+          { header: 'Jumlah Digunakan', key: 'jumlah_digunakan' },
+          { header: 'Total Potongan', key: 'total_potongan', isCurrency: true },
+        ];
+        const totalPotongan = excelData.reduce((s: number, i: any) => s + (i.total_potongan || 0), 0);
+        summary = [{ label: 'Total Seluruh Potongan', value: totalPotongan, isCurrency: true }];
       }
 
       await exportToExcel({

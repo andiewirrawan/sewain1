@@ -69,9 +69,25 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { id_kontrak, periode, tanggal_bayar, nominal, status_pembayaran, metode_pembayaran, catatan } = body;
+    const { 
+      id_kontrak, 
+      periode, 
+      tanggal_bayar, 
+      nominal, 
+      status_pembayaran, 
+      metode_pembayaran, 
+      catatan,
+      harga_normal,
+      jenis_diskon,
+      nilai_diskon,
+      nominal_diskon,
+      total_tagihan,
+      id_promo,
+      nama_promo_snapshot,
+      persentase_snapshot
+    } = body;
 
-    if (!id_kontrak || !periode || !tanggal_bayar || !nominal || !status_pembayaran || !metode_pembayaran) {
+    if (!id_kontrak || !periode || !tanggal_bayar || nominal === undefined || !status_pembayaran || !metode_pembayaran) {
       return NextResponse.json({ message: 'Field wajib diisi: Kontrak, Periode, Tanggal Bayar, Nominal, Status, Metode' }, { status: 400 });
     }
 
@@ -97,7 +113,15 @@ export async function POST(request: Request) {
           nominal,
           status_pembayaran,
           metode_pembayaran,
-          catatan
+          catatan,
+          harga_normal,
+          jenis_diskon,
+          nilai_diskon,
+          nominal_diskon,
+          total_tagihan,
+          id_promo,
+          nama_promo_snapshot,
+          persentase_snapshot
         }
       ])
       .select()
