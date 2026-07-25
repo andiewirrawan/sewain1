@@ -18,7 +18,8 @@ BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'
+SET search_path = public;
 
 -- 3. Tabel Promo (Sempurnakan)
 -- Note: Kita asumsikan tabel promo sudah ada dari migrasi sebelumnya, jadi kita gunakan ALTER

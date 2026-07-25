@@ -6,7 +6,7 @@ CREATE TYPE promo_status_type AS ENUM ('Aktif', 'Tidak Aktif');
 
 -- 1. Tabel users
 CREATE TABLE users (
-    id_user UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nama TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -99,7 +99,7 @@ CREATE TABLE promo_penyewa (
 CREATE TABLE audit_log (
     id_log UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     waktu TIMESTAMP DEFAULT now(),
-    id_user UUID REFERENCES users(id_user),
+    id_user UUID REFERENCES users(id),
     role TEXT NOT NULL,
     aktivitas TEXT NOT NULL,
     nama_tabel TEXT NOT NULL,
@@ -122,7 +122,8 @@ BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'
+SET search_path = public;
 
 CREATE TRIGGER set_updated_at_promo
     BEFORE UPDATE ON promo
@@ -145,7 +146,7 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM users 
-        WHERE users.id_user = auth.uid() 
+        WHERE users.id = auth.uid() 
         AND users.role = 'Owner'
     )
 );
@@ -162,7 +163,7 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM users 
-        WHERE users.id_user = auth.uid() 
+        WHERE users.id = auth.uid() 
         AND users.role = 'Owner'
     )
 );

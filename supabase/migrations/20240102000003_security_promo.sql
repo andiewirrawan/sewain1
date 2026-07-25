@@ -23,7 +23,7 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM users 
-        WHERE users.id_user = auth.uid() 
+        WHERE users.id = auth.uid() 
         AND users.role = 'Owner'
     )
 );
@@ -40,7 +40,7 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM users 
-        WHERE users.id_user = auth.uid() 
+        WHERE users.id = auth.uid() 
         AND users.role = 'Owner'
     )
 );
