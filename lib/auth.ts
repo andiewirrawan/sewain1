@@ -9,6 +9,7 @@ export interface UserPayload {
   nama: string;
   email: string;
   role: 'Owner' | 'Admin';
+  is_system_owner: boolean;
 }
 
 export async function generateToken(payload: UserPayload): Promise<string> {

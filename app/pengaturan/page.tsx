@@ -21,7 +21,7 @@ import {
 import Pagination from '@/components/Pagination';
 
 export default function PengaturanPage() {
-  const [user, setUser] = useState<{ id: string; nama: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; nama: string; role: string; is_system_owner: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -275,7 +275,7 @@ export default function PengaturanPage() {
     if (!showDeleteConfirm) return;
     const u = showDeleteConfirm;
     
-    if (deleteConfirmText !== 'HAPUS USER') {
+    if (deleteConfirmText !== 'HAPUS PERMANEN') {
       alert('Teks konfirmasi salah');
       return;
     }
@@ -285,7 +285,7 @@ export default function PengaturanPage() {
         method: 'DELETE'
       });
       if (res.ok) {
-        alert('User berhasil dinonaktifkan (Soft Delete)');
+        alert('User berhasil dihapus permanen');
         setShowDeleteConfirm(null);
         setDeleteConfirmText('');
         fetchAllData();
@@ -498,10 +498,10 @@ export default function PengaturanPage() {
                     </td>
                     <td className="px-5 py-3">
                       <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-bold",
-                        u.role === 'Owner' ? "bg-purple-100 text-purple-600" : "bg-blue-100 text-blue-600"
+                        "px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 w-fit",
+                        u.is_system_owner ? "bg-amber-100 text-amber-700" : u.role === 'Owner' ? "bg-purple-100 text-purple-600" : "bg-green-100 text-green-600"
                       )}>
-                        {u.role}
+                        {u.is_system_owner ? '👑 System Owner' : u.role === 'Owner' ? '🟦 Owner' : '🟩 Admin'}
                       </span>
                     </td>
                     <td className="px-5 py-3">
@@ -533,32 +533,35 @@ export default function PengaturanPage() {
                           onClick={() => setEditingUser({...u, password: ''})}
                           className="p-1.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
                           title="Edit User"
+                          disabled={!user?.is_system_owner && u.role === 'Owner' && u.id !== user?.id}
                         >
                           <Edit2 size={14} />
                         </button>
-                        <button 
-                          onClick={() => handleToggleStatus(u.id, u.status)}
-                          className={cn(
-                            "p-1.5 rounded-lg transition-colors",
-                            u.status === 'Aktif' 
-                              ? "hover:bg-amber-50 text-slate-400 hover:text-amber-600" 
-                              : "hover:bg-green-50 text-slate-400 hover:text-green-600"
-                          )}
-                          title={u.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
-                        >
-                          {u.status === 'Aktif' ? <PowerOff size={14} /> : <Power size={14} />}
-                        </button>
-                        {u.role !== 'Owner' && u.id !== user?.id && (
-                          <button 
-                            onClick={() => {
-                              setShowDeleteConfirm(u);
-                              setDeleteConfirmText('');
-                            }}
-                            className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
-                            title="Hapus User"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                        {(!u.is_system_owner) && (!(!user?.is_system_owner && u.role === 'Owner')) && (
+                          <>
+                            <button 
+                              onClick={() => handleToggleStatus(u.id, u.status)}
+                              className={cn(
+                                "p-1.5 rounded-lg transition-colors",
+                                u.status === 'Aktif' 
+                                  ? "hover:bg-amber-50 text-slate-400 hover:text-amber-600" 
+                                  : "hover:bg-green-50 text-slate-400 hover:text-green-600"
+                              )}
+                              title={u.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                            >
+                              {u.status === 'Aktif' ? <PowerOff size={14} /> : <Power size={14} />}
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setShowDeleteConfirm(u);
+                                setDeleteConfirmText('');
+                              }}
+                              className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                              title="Hapus Permanen User"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -737,7 +740,7 @@ export default function PengaturanPage() {
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 >
                   <option value="Admin">Admin</option>
-                  <option value="Owner">Owner</option>
+                  {user?.is_system_owner && <option value="Owner">Owner</option>}
                 </select>
               </div>
               <div className="flex gap-3 pt-4">
@@ -769,19 +772,19 @@ export default function PengaturanPage() {
                 <AlertTriangle size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-red-900">Konfirmasi Hapus</h3>
-                <p className="text-sm text-red-700/80">Soft delete untuk user {showDeleteConfirm.nama}</p>
+                <h3 className="text-xl font-bold text-red-900">Konfirmasi Hapus Permanen</h3>
+                <p className="text-sm text-red-700/80">Hapus permanen untuk user {showDeleteConfirm.nama}</p>
               </div>
             </div>
             <div className="p-6 space-y-4">
               <p className="text-sm text-slate-600">
-                User ini akan dinonaktifkan. Data tetap tersimpan untuk audit namun user tidak dapat login.
+                Data user ini akan dihapus permanen dari database. Tindakan ini tidak dapat dibatalkan!
               </p>
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500 block tracking-widest">Ketik "HAPUS USER" untuk konfirmasi</label>
+                <label className="text-[10px] uppercase font-bold text-slate-500 block tracking-widest">Ketik "HAPUS PERMANEN" untuk konfirmasi</label>
                 <input 
                   type="text" 
-                  placeholder="HAPUS USER"
+                  placeholder="HAPUS PERMANEN"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-red-600 font-bold"
@@ -799,10 +802,10 @@ export default function PengaturanPage() {
                 </button>
                 <button 
                   onClick={handleDeleteUser}
-                  disabled={deleteConfirmText !== 'HAPUS USER'}
+                  disabled={deleteConfirmText !== 'HAPUS PERMANEN'}
                   className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-100"
                 >
-                  Nonaktifkan User
+                  Hapus Permanen
                 </button>
               </div>
             </div>
@@ -856,10 +859,11 @@ export default function PengaturanPage() {
                   <select 
                     value={editingUser.role}
                     onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    disabled={editingUser.is_system_owner || (!user?.is_system_owner && editingUser.role === 'Owner')}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="Admin">Admin</option>
-                    <option value="Owner">Owner</option>
+                    {user?.is_system_owner && <option value="Owner">Owner</option>}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -867,7 +871,8 @@ export default function PengaturanPage() {
                   <select 
                     value={editingUser.status}
                     onChange={(e) => setEditingUser({...editingUser, status: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    disabled={editingUser.is_system_owner}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="Aktif">Aktif</option>
                     <option value="Nonaktif">Nonaktif</option>

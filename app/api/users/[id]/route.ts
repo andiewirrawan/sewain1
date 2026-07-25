@@ -17,16 +17,42 @@ export async function PUT(
   const { data: oldData } = await supabase.from('users').select('*').eq('id', id).single();
   if (!oldData) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
-  const { status, password } = body;
+  const { status, password, role, nama } = body;
 
-  if (status === 'Nonaktif' && (id === user.id || oldData.role === 'Owner')) {
-    return NextResponse.json({ message: 'Anda tidak dapat menonaktifkan diri sendiri atau Owner' }, { status: 400 });
+  // Validation based on is_system_owner
+  if (oldData.is_system_owner) {
+    if (status !== undefined && status !== oldData.status) {
+      return NextResponse.json({ message: 'Akun System Owner tidak dapat diubah.' }, { status: 403 });
+    }
+    if (role !== undefined && role !== oldData.role) {
+      return NextResponse.json({ message: 'Akun System Owner tidak dapat diubah.' }, { status: 403 });
+    }
+  }
+
+  // Self-modification constraints
+  if (id === user.id) {
+    if (status === 'Nonaktif') {
+      return NextResponse.json({ message: 'Anda tidak dapat menonaktifkan diri sendiri' }, { status: 400 });
+    }
+    if (role !== undefined && role !== oldData.role) {
+      return NextResponse.json({ message: 'Anda tidak dapat mengubah role diri sendiri' }, { status: 400 });
+    }
+  }
+
+  // Owner specific constraints
+  if (!user.is_system_owner) {
+    if (oldData.role === 'Owner' && id !== user.id) {
+      return NextResponse.json({ message: 'Anda tidak dapat mengubah data Owner lain' }, { status: 403 });
+    }
+    if (role === 'Owner' && oldData.role !== 'Owner') {
+      return NextResponse.json({ message: 'Anda tidak dapat mengubah role menjadi Owner' }, { status: 403 });
+    }
   }
 
   const updateData: any = {};
-  if (body.nama !== undefined) updateData.nama = body.nama;
-  if (body.role !== undefined) updateData.role = body.role;
-  if (body.status !== undefined) updateData.status = body.status;
+  if (nama !== undefined) updateData.nama = nama;
+  if (role !== undefined) updateData.role = role;
+  if (status !== undefined) updateData.status = status;
   
   if (password && password.trim() !== '') {
     updateData.password = await bcrypt.hash(password, 10);
@@ -39,7 +65,16 @@ export async function PUT(
   const { error } = await supabase.from('users').update(updateData).eq('id', id);
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
   
-  await catatAuditLog(user, 'Update User', 'users', id, oldData, updateData);
+  let actionName = 'UPDATE_USER';
+  if (status && status !== oldData.status) {
+    actionName = status === 'Nonaktif' ? 'SOFT_DELETE_USER' : 'RESTORE_USER';
+  } else if (role && role !== oldData.role) {
+    actionName = 'CHANGE_ROLE';
+  } else if (status) {
+    actionName = 'CHANGE_STATUS';
+  }
+
+  await catatAuditLog(user, actionName, 'users', id, oldData, updateData);
   
   return NextResponse.json({ message: 'User berhasil diupdate' });
 }
@@ -60,15 +95,19 @@ export async function DELETE(
   const { data: targetUser } = await supabase.from('users').select('*').eq('id', id).single();
   if (!targetUser) return NextResponse.json({ message: 'User tidak ditemukan' }, { status: 404 });
 
-  if (targetUser.role === 'Owner') {
-    return NextResponse.json({ message: 'User dengan role Owner tidak boleh dihapus' }, { status: 400 });
+  if (targetUser.is_system_owner) {
+    return NextResponse.json({ message: 'Akun System Owner tidak dapat diubah.' }, { status: 403 });
+  }
+
+  if (!user.is_system_owner && targetUser.role === 'Owner') {
+    return NextResponse.json({ message: 'Anda tidak dapat menghapus Owner lain' }, { status: 403 });
   }
   
-  // Soft Delete: Ubah status menjadi Nonaktif
-  const { error } = await supabase.from('users').update({ status: 'Nonaktif' }).eq('id', id);
+  // Permanent Delete
+  const { error } = await supabase.from('users').delete().eq('id', id);
   if (error) return NextResponse.json({ message: error.message }, { status: 500 });
   
-  await catatAuditLog(user, 'Soft Delete User', 'users', id, targetUser, { status: 'Nonaktif' });
+  await catatAuditLog(user, 'DELETE_USER_PERMANENT', 'users', id, targetUser, null);
   
-  return NextResponse.json({ message: 'User berhasil dinonaktifkan (Soft Delete)' });
+  return NextResponse.json({ message: 'User berhasil dihapus permanen' });
 }

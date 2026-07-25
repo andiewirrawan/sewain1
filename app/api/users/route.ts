@@ -42,6 +42,7 @@ export async function GET(request: Request) {
     email: u.email,
     role: u.role,
     status: u.status,
+    is_system_owner: u.is_system_owner,
     created_at: u.created_at,
     created_by: u.created_by,
     last_login: u.last_login
@@ -55,6 +56,11 @@ export async function POST(request: Request) {
   if (!user || !requireRole(user, ['Owner'])) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   const { nama, email, password, role } = await request.json();
+  
+  if (role === 'Owner' && !user.is_system_owner) {
+    return NextResponse.json({ message: 'Hanya System Owner yang dapat membuat Owner baru' }, { status: 403 });
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const { data, error } = await supabase.from('users').insert({ 
@@ -63,6 +69,7 @@ export async function POST(request: Request) {
     password: hashedPassword, 
     role, 
     status: 'Aktif',
+    is_system_owner: false,
     created_by: user.nama
   }).select().single();
   
@@ -71,7 +78,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
   
-  await catatAuditLog(user, 'Create User', 'users', data.id, null, { nama, email, role });
+  await catatAuditLog(user, 'CREATE_USER', 'users', data.id, null, { nama, email, role });
   
   return NextResponse.json({ message: 'User berhasil dibuat' });
 }
