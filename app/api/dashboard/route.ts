@@ -65,13 +65,32 @@ export async function GET(req: NextRequest) {
     // 4. Tunggakan (Berdasarkan Tabel Tagihan)
     const { data: allUnpaid, error: errTunggakan } = await supabaseAdmin
       .from('tagihan')
-      .select('total_tagihan, terbayar')
+      .select('total_tagihan, terbayar, jatuh_tempo')
       .neq('status_tagihan', 'Lunas');
 
     if (errTunggakan) throw errTunggakan;
 
     const total_piutang = allUnpaid?.reduce((sum, t) => sum + (Number(t.total_tagihan) - Number(t.terbayar)), 0) || 0;
     const jumlah_tagihan_tertunggak = allUnpaid?.length || 0;
+
+    // Aging Piutang
+    const aging_piutang = {
+      "0-30": 0,
+      "31-60": 0,
+      "61-90": 0,
+      ">90": 0
+    };
+
+    allUnpaid?.forEach(t => {
+      const diffTime = Math.abs(now.getTime() - new Date(t.jatuh_tempo).getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const value = Number(t.total_tagihan) - Number(t.terbayar);
+
+      if (diffDays <= 30) aging_piutang["0-30"] += value;
+      else if (diffDays <= 60) aging_piutang["31-60"] += value;
+      else if (diffDays <= 90) aging_piutang["61-90"] += value;
+      else aging_piutang[">90"] += value;
+    });
 
     // 5. Belum Bayar Periode Ini
     const { data: belum_bayar_bulan_ini } = await supabaseAdmin
@@ -105,6 +124,7 @@ export async function GET(req: NextRequest) {
       pendapatan_tahun_ini,
       total_piutang,
       jumlah_tagihan_tertunggak,
+      aging_piutang,
       occupancy_per_jenis,
       belum_bayar_bulan_ini: belum_bayar_bulan_ini?.map(b => ({
         ...b.kontrak_sewa,

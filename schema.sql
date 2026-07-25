@@ -109,9 +109,20 @@ CREATE TABLE audit_log (
 );
 
 -- 9. Modul Tagihan (Piutang)
-CREATE TYPE status_tagihan_type AS ENUM ('Belum Bayar', 'Sebagian', 'Lunas', 'Batal');
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status_tagihan_type') THEN
+        CREATE TYPE status_tagihan_type AS ENUM ('Belum Bayar', 'Sebagian', 'Lunas', 'Terlambat', 'Write Off', 'Dibatalkan');
+    ELSE
+        -- Update existing enum if possible or handle via ALTER if needed. 
+        -- In Supabase/Postgres we usually use ALTER TYPE
+        ALTER TYPE status_tagihan_type ADD VALUE IF NOT EXISTS 'Terlambat';
+        ALTER TYPE status_tagihan_type ADD VALUE IF NOT EXISTS 'Write Off';
+        ALTER TYPE status_tagihan_type ADD VALUE IF NOT EXISTS 'Dibatalkan';
+    END IF;
+END $$;
 
-CREATE TABLE riwayat_generate_tagihan (
+CREATE TABLE IF NOT EXISTS riwayat_generate_tagihan (
     id_generate UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     periode TEXT NOT NULL, -- 'MM-YYYY'
     tanggal_generate TIMESTAMP DEFAULT now(),
@@ -121,7 +132,7 @@ CREATE TABLE riwayat_generate_tagihan (
     status TEXT DEFAULT 'Selesai'
 );
 
-CREATE TABLE tagihan (
+CREATE TABLE IF NOT EXISTS tagihan (
     id_tagihan UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     id_kontrak UUID REFERENCES kontrak_sewa(id_kontrak) ON DELETE CASCADE,
     periode TEXT NOT NULL, -- 'MM-YYYY'
@@ -138,7 +149,7 @@ CREATE TABLE tagihan (
     UNIQUE(id_kontrak, periode)
 );
 
-CREATE TABLE alokasi_pembayaran (
+CREATE TABLE IF NOT EXISTS alokasi_pembayaran (
     id_alokasi UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     id_pembayaran UUID REFERENCES pembayaran(id_pembayaran) ON DELETE CASCADE,
     id_tagihan UUID REFERENCES tagihan(id_tagihan) ON DELETE CASCADE,
@@ -146,8 +157,21 @@ CREATE TABLE alokasi_pembayaran (
     created_at TIMESTAMP DEFAULT now()
 );
 
--- Update Pembayaran
-ALTER TABLE pembayaran ADD COLUMN id_penyewa UUID REFERENCES penyewa(id_penyewa);
+-- WA Reminder Logging
+CREATE TABLE IF NOT EXISTS log_wa_tagihan (
+    id_log UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_penyewa UUID REFERENCES penyewa(id_penyewa),
+    id_user UUID REFERENCES users(id),
+    tanggal_kirim TIMESTAMP DEFAULT now(),
+    jumlah_tagihan_dilampirkan INTEGER,
+    total_piutang_wa NUMERIC,
+    status_kirim TEXT DEFAULT 'Berhasil',
+    pesan_error TEXT
+);
+
+-- Update Pembayaran & Penyewa
+ALTER TABLE pembayaran ADD COLUMN IF NOT EXISTS id_penyewa UUID REFERENCES penyewa(id_penyewa);
+ALTER TABLE penyewa ADD COLUMN IF NOT EXISTS saldo_titipan NUMERIC DEFAULT 0;
 
 -- Indexes
 CREATE INDEX idx_promo_status ON promo(status);

@@ -48,6 +48,11 @@ export default function DashboardPage() {
     { title: 'Pendapatan Tahun Ini', value: formatRupiah(data?.pendapatan_tahun_ini), icon: Wallet, color: 'text-purple-600', bg: 'bg-purple-100' },
   ];
 
+  const agingData = Object.entries(data?.aging_piutang || {}).map(([key, val]) => ({
+    name: key,
+    nominal: val
+  }));
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Dashboard Sewain</h1>
@@ -64,18 +69,38 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h3 className="font-bold text-slate-800 mb-4 uppercase text-sm tracking-wider">Occupancy per Jenis</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={occupancyData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="terisi" fill="#2563eb" name="Terisi" />
-              <Bar dataKey="kosong" fill="#f59e0b" name="Kosong" />
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 mb-4 uppercase text-sm tracking-wider">Occupancy per Jenis</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={occupancyData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="terisi" fill="#2563eb" name="Terisi" />
+                <Bar dataKey="kosong" fill="#f59e0b" name="Kosong" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 mb-4 uppercase text-sm tracking-wider text-rose-600">Aging Piutang (Hari)</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agingData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value: any) => formatRupiah(value)} />
+                <Bar dataKey="nominal" fill="#e11d48" name="Piutang">
+                  {agingData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 0 ? '#fb7185' : index === 1 ? '#f43f5e' : index === 2 ? '#e11d48' : '#be123c'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 

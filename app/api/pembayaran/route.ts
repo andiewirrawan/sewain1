@@ -168,9 +168,30 @@ export async function POST(req: NextRequest) {
       await Promise.all(tagihanUpdates);
     }
 
+    // 4. Tangani Overpayment (Deposit)
+    if (sisaNominal > 0.01) {
+      // Ambil saldo saat ini
+      const { data: penyewa, error: errPenyewa } = await supabaseAdmin
+        .from('penyewa')
+        .select('saldo_titipan')
+        .eq('id_penyewa', id_penyewa)
+        .single();
+      
+      if (!errPenyewa) {
+        const newSaldo = parseFloat(penyewa.saldo_titipan || 0) + sisaNominal;
+        await supabaseAdmin
+          .from('penyewa')
+          .update({ saldo_titipan: newSaldo })
+          .eq('id_penyewa', id_penyewa);
+        
+        await catatAuditLog(user, 'OVERPAYMENT_DEPOSIT', 'penyewa', id_penyewa, { saldo_lama: penyewa.saldo_titipan }, { saldo_baru: newSaldo, sisa_bayar: sisaNominal });
+      }
+    }
+
     await catatAuditLog(user, 'CREATE_PAYMENT_FIFO', 'pembayaran', pembayaranData.id_pembayaran, null, {
       pembayaran: pembayaranData,
-      alokasi: alokasiInserts
+      alokasi: alokasiInserts,
+      overpayment: sisaNominal > 0 ? sisaNominal : 0
     });
 
     return NextResponse.json(pembayaranData, { status: 201 });

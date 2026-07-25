@@ -27,9 +27,19 @@ export default function TagihanDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [waLogs, setWaLogs] = useState<any[]>([]);
+
   useEffect(() => {
     fetchDetail();
+    fetchWaLogs();
   }, [id]);
+
+  const fetchWaLogs = async () => {
+    try {
+      const res = await apiFetch(`/api/tagihan/wa-log?id_penyewa=${data?.kontrak_sewa?.penyewa?.id_penyewa}`);
+      if (res.ok) setWaLogs(await res.json());
+    } catch (err) {}
+  };
 
   const fetchDetail = async () => {
     try {
@@ -38,6 +48,12 @@ export default function TagihanDetailPage() {
       if (!res.ok) throw new Error('Gagal memuat detail tagihan');
       const json = await res.json();
       setData(json);
+      
+      // Fetch logs after we have tenant ID
+      if (json.kontrak_sewa?.penyewa?.id_penyewa) {
+        const logRes = await apiFetch(`/api/tagihan/wa-log?id_penyewa=${json.kontrak_sewa.penyewa.id_penyewa}`);
+        if (logRes.ok) setWaLogs(await logRes.json());
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -45,9 +61,44 @@ export default function TagihanDetailPage() {
     }
   };
 
-  const handleSendWA = () => {
-    const url = generateWhatsAppTagihan(data.kontrak_sewa?.penyewa, [data]);
-    if (url) window.open(url, '_blank');
+  const handleSendWA = async () => {
+    try {
+      const url = generateWhatsAppTagihan(data.kontrak_sewa?.penyewa, [data]);
+      if (url) {
+        window.open(url, '_blank');
+        // Log the event
+        await apiFetch('/api/tagihan/wa-log', {
+          method: 'POST',
+          body: JSON.stringify({
+            id_penyewa: data.kontrak_sewa?.penyewa?.id_penyewa,
+            jumlah_tagihan: 1,
+            total_piutang: sisa,
+            status: 'Berhasil'
+          })
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log WA reminder:', err);
+    }
+  };
+
+  const handleUpdateStatus = async (newStatus: string) => {
+    const confirmMsg = `Apakah Anda yakin ingin mengubah status tagihan ini menjadi ${newStatus}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await apiFetch(`/api/tagihan/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          status_tagihan: newStatus,
+          alasan_perubahan: `Status diubah menjadi ${newStatus} secara manual`
+        })
+      });
+      if (!res.ok) throw new Error('Gagal memperbarui status');
+      fetchDetail();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   if (loading) return <LayoutWrapper><div className="p-8">Loading...</div></LayoutWrapper>;
@@ -196,20 +247,69 @@ export default function TagihanDetailPage() {
                   <MessageCircle size={18} />
                   Kirim WA Tagihan
                 </button>
-                <button className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => handleUpdateStatus('Write Off')}
+                    className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all text-xs"
+                  >
+                    Write Off
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateStatus('Dibatalkan')}
+                    className="flex items-center justify-center gap-2 bg-rose-50 text-rose-700 py-3 rounded-xl font-bold hover:bg-rose-100 transition-all text-xs"
+                  >
+                    Dibatalkan
+                  </button>
+                </div>
+                <button 
+                  onClick={() => router.push(`/tagihan/${id}/edit`)}
+                  className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm"
+                >
                   <Edit2 size={18} />
                   Koreksi Tagihan
                 </button>
               </div>
+
+              {/* Deposit Info */}
+              {data.kontrak_sewa?.penyewa?.saldo_titipan > 0 && (
+                <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <div className="text-[10px] uppercase font-black text-emerald-600 tracking-widest mb-1">Saldo Titipan (Deposit)</div>
+                  <div className="text-xl font-black text-emerald-900">{formatRupiah(data.kontrak_sewa?.penyewa?.saldo_titipan)}</div>
+                  <p className="text-[10px] text-emerald-700 mt-1 italic">Saldo ini dapat digunakan untuk memotong tagihan berikutnya.</p>
+                </div>
+              )}
             </div>
 
             {/* Note Card */}
             {data.catatan && (
               <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 space-y-2">
                 <h4 className="text-amber-800 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                  <FileText size={14} /> Catatan Tagihan
+                  Catatan Tagihan
                 </h4>
                 <p className="text-amber-700 text-sm italic">{data.catatan}</p>
+              </div>
+            )}
+
+            {/* WA History Card */}
+            {waLogs.length > 0 && (
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                <h4 className="text-slate-900 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                  <MessageCircle size={14} className="text-green-600" /> Histori WA Reminder
+                </h4>
+                <div className="space-y-3">
+                  {waLogs.map((log: any) => (
+                    <div key={log.id_log} className="flex justify-between items-start text-xs border-b border-slate-50 pb-2">
+                      <div>
+                        <div className="font-bold text-slate-700">{formatTanggal(log.tanggal_kirim)}</div>
+                        <div className="text-slate-500">Oleh: {log.users?.nama}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-slate-900">{formatRupiah(log.total_piutang_wa)}</div>
+                        <div className="text-green-600 font-bold uppercase text-[9px]">{log.status_kirim}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

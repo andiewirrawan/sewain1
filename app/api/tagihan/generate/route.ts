@@ -98,12 +98,76 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // 3. Simpan tagihan
-    const { error: errInsert } = await supabaseAdmin
+    // 3. Simpan tagihan dan Tangani Saldo Titipan
+    const { data: newTagihans, error: errInsert } = await supabaseAdmin
       .from('tagihan')
-      .insert(tagihanInserts);
+      .insert(tagihanInserts)
+      .select();
 
     if (errInsert) throw errInsert;
+
+    // 4. Cek Saldo Titipan untuk setiap penyewa dan alokasikan otomatis
+    for (const nt of newTagihans) {
+      const k = kontrakToGenerate.find(kg => kg.id_kontrak === nt.id_kontrak);
+      if (!k) continue;
+
+      // Ambil saldo terbaru penyewa
+      const { data: penyewa } = await supabaseAdmin
+        .from('penyewa')
+        .select('saldo_titipan')
+        .eq('id_penyewa', k.id_penyewa)
+        .single();
+      
+      if (penyewa && parseFloat(penyewa.saldo_titipan || 0) > 0) {
+        const saldo = parseFloat(penyewa.saldo_titipan);
+        const bill = parseFloat(nt.total_tagihan);
+        const alokasi = Math.min(saldo, bill);
+
+        if (alokasi > 0) {
+          // Buat Pembayaran Otomatis dari Saldo Titipan
+          const { data: pData, error: pErr } = await supabaseAdmin
+            .from('pembayaran')
+            .insert([{
+              id_penyewa: k.id_penyewa,
+              tanggal_bayar: new Date().toISOString(),
+              nominal: alokasi,
+              status_pembayaran: 'Lunas',
+              metode_pembayaran: 'Saldo Titipan',
+              catatan: `Alokasi otomatis dari deposit untuk periode ${nt.periode}`
+            }])
+            .select()
+            .single();
+          
+          if (!pErr) {
+            // Catat Alokasi
+            await supabaseAdmin.from('alokasi_pembayaran').insert([{
+              id_pembayaran: pData.id_pembayaran,
+              id_tagihan: nt.id_tagihan,
+              nominal_alokasi: alokasi
+            }]);
+
+            // Update Tagihan
+            const newTerbayar = alokasi;
+            const newStatus = Math.abs(newTerbayar - bill) < 0.01 ? 'Lunas' : 'Sebagian';
+            await supabaseAdmin.from('tagihan').update({
+              terbayar: newTerbayar,
+              status_tagihan: newStatus
+            }).eq('id_tagihan', nt.id_tagihan);
+
+            // Update Saldo Titipan Penyewa
+            await supabaseAdmin.from('penyewa').update({
+              saldo_titipan: saldo - alokasi
+            }).eq('id_penyewa', k.id_penyewa);
+
+            await catatAuditLog(user, 'AUTO_ALLOCATE_DEPOSIT', 'tagihan', nt.id_tagihan, null, {
+              alokasi,
+              id_pembayaran: pData.id_pembayaran,
+              sisa_saldo: saldo - alokasi
+            });
+          }
+        }
+      }
+    }
 
     // 4. Catat riwayat generate
     const { data: riwayat, error: errRiwayat } = await supabaseAdmin
