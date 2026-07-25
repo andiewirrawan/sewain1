@@ -55,7 +55,7 @@ export async function PUT(
   if (status !== undefined) updateData.status = status;
   
   if (password && password.trim() !== '') {
-    updateData.password = await bcrypt.hash(password, 10);
+    updateData.password_hash = await bcrypt.hash(password, 10);
   }
 
   if (Object.keys(updateData).length === 0) {
