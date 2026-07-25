@@ -90,6 +90,18 @@ export default function PembayaranDetail() {
                   <span className="text-gray-500">Nominal Bayar</span>
                   <span className="text-2xl font-bold text-gray-900">{formatRupiah(data.nominal)}</span>
                 </div>
+                {data.id_promo && (
+                  <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-amber-700 text-xs font-bold uppercase tracking-wider">Promo Digunakan</span>
+                      <span className="bg-amber-200 text-amber-800 px-2 py-0.5 rounded text-[10px] font-bold">{data.nama_promo_snapshot}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-amber-600">Potongan ({data.jenis_diskon})</span>
+                      <span className="text-red-600 font-bold">-{formatRupiah(data.nominal_diskon)}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-between py-3 border-b border-gray-50">
                   <span className="text-gray-500">Tanggal Bayar</span>
                   <span className="font-medium">{formatTanggal(data.tanggal_bayar)}</span>

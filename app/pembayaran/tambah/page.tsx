@@ -79,9 +79,15 @@ export default function TambahPembayaran() {
         const activePromos = data.promo_penyewa
           ?.map((item: any) => item.promo)
           ?.filter((p: any) => {
-            return p && p.status === 'Aktif' && 
-                   new Date(p.tanggal_mulai) <= now && 
-                   new Date(p.tanggal_selesai) >= now;
+            if (!p || p.status !== 'Aktif') return false;
+            
+            const startDate = new Date(p.tanggal_mulai);
+            const endDate = new Date(p.tanggal_selesai);
+            
+            // Set endDate to end of day (23:59:59.999)
+            endDate.setHours(23, 59, 59, 999);
+            
+            return startDate <= now && endDate >= now;
           }) || [];
         
         // Sort by priority (descending) then by creation date (descending)

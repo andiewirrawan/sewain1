@@ -163,8 +163,12 @@ export default function DetailPenyewaPage() {
                 {penyewa.promo_penyewa.map((item: any) => {
                   const p = item.promo;
                   if (!p) return null;
-                  const isExpired = new Date(p.tanggal_selesai) < new Date();
-                  const isStarted = new Date(p.tanggal_mulai) <= new Date();
+                  const startDate = new Date(p.tanggal_mulai);
+                  const endDate = new Date(p.tanggal_selesai);
+                  endDate.setHours(23, 59, 59, 999);
+
+                  const isExpired = endDate < new Date();
+                  const isStarted = startDate <= new Date();
                   const isActive = p.status === 'Aktif' && isStarted && !isExpired;
                   
                   return (

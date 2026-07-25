@@ -10,7 +10,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  Trash2
+  Trash2,
+  Ticket
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
@@ -243,7 +244,15 @@ export default function PembayaranPage() {
                       {formatTanggal(p.tanggal_bayar)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {formatRupiah(p.nominal)}
+                      <div className="flex flex-col">
+                        <span>{formatRupiah(p.nominal)}</span>
+                        {p.id_promo && (
+                          <span className="inline-flex items-center text-[10px] text-amber-600 bg-amber-50 px-1 rounded border border-amber-100 w-fit mt-0.5">
+                            <Ticket className="w-2.5 h-2.5 mr-0.5" />
+                            Promo
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(p.status_pembayaran)}
