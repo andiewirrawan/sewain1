@@ -108,12 +108,58 @@ CREATE TABLE audit_log (
     data_baru JSONB
 );
 
+-- 9. Modul Tagihan (Piutang)
+CREATE TYPE status_tagihan_type AS ENUM ('Belum Bayar', 'Sebagian', 'Lunas', 'Batal');
+
+CREATE TABLE riwayat_generate_tagihan (
+    id_generate UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    periode TEXT NOT NULL, -- 'MM-YYYY'
+    tanggal_generate TIMESTAMP DEFAULT now(),
+    id_user UUID REFERENCES users(id),
+    jumlah_tagihan INTEGER DEFAULT 0,
+    total_nominal NUMERIC DEFAULT 0,
+    status TEXT DEFAULT 'Selesai'
+);
+
+CREATE TABLE tagihan (
+    id_tagihan UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_kontrak UUID REFERENCES kontrak_sewa(id_kontrak) ON DELETE CASCADE,
+    periode TEXT NOT NULL, -- 'MM-YYYY'
+    jatuh_tempo DATE NOT NULL,
+    nominal_tagihan NUMERIC NOT NULL,
+    id_promo UUID REFERENCES promo(id_promo),
+    nominal_diskon NUMERIC DEFAULT 0,
+    total_tagihan NUMERIC NOT NULL,
+    terbayar NUMERIC DEFAULT 0,
+    status_tagihan status_tagihan_type DEFAULT 'Belum Bayar',
+    catatan TEXT,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now(),
+    UNIQUE(id_kontrak, periode)
+);
+
+CREATE TABLE alokasi_pembayaran (
+    id_alokasi UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_pembayaran UUID REFERENCES pembayaran(id_pembayaran) ON DELETE CASCADE,
+    id_tagihan UUID REFERENCES tagihan(id_tagihan) ON DELETE CASCADE,
+    nominal_alokasi NUMERIC NOT NULL,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+-- Update Pembayaran
+ALTER TABLE pembayaran ADD COLUMN id_penyewa UUID REFERENCES penyewa(id_penyewa);
+
 -- Indexes
 CREATE INDEX idx_promo_status ON promo(status);
 CREATE INDEX idx_promo_tanggal ON promo(tanggal_mulai, tanggal_selesai);
 CREATE INDEX idx_promo_penyewa_promo ON promo_penyewa(id_promo);
 CREATE INDEX idx_promo_penyewa_penyewa ON promo_penyewa(id_penyewa);
 CREATE INDEX idx_pembayaran_promo ON pembayaran(id_promo);
+CREATE INDEX idx_tagihan_kontrak ON tagihan(id_kontrak);
+CREATE INDEX idx_tagihan_periode ON tagihan(periode);
+CREATE INDEX idx_tagihan_status ON tagihan(status_tagihan);
+CREATE INDEX idx_alokasi_pembayaran ON alokasi_pembayaran(id_pembayaran);
+CREATE INDEX idx_alokasi_tagihan ON alokasi_pembayaran(id_tagihan);
 
 -- Triggers
 CREATE OR REPLACE FUNCTION handle_updated_at()
@@ -130,6 +176,11 @@ CREATE TRIGGER set_updated_at_promo
     FOR EACH ROW
     EXECUTE FUNCTION handle_updated_at();
 
+CREATE TRIGGER set_updated_at_tagihan
+    BEFORE UPDATE ON tagihan
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_updated_at();
+
 -- Security: Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unit ENABLE ROW LEVEL SECURITY;
@@ -139,6 +190,9 @@ ALTER TABLE pembayaran ENABLE ROW LEVEL SECURITY;
 ALTER TABLE promo ENABLE ROW LEVEL SECURITY;
 ALTER TABLE promo_penyewa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE riwayat_generate_tagihan ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tagihan ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alokasi_pembayaran ENABLE ROW LEVEL SECURITY;
 
 -- Shared Policy: Allow all operations for authenticated users (handled by API logic)
 -- Since we use service_role key in our API routes, these policies primarily serve to satisfy the linter
@@ -167,4 +221,13 @@ CREATE POLICY "Promo Penyewa access" ON promo_penyewa FOR ALL TO authenticated U
 
 -- Audit Log Policy
 CREATE POLICY "Audit Log access" ON audit_log FOR ALL TO authenticated USING (true);
+
+-- Riwayat Generate Policy
+CREATE POLICY "Riwayat Generate access" ON riwayat_generate_tagihan FOR ALL TO authenticated USING (true);
+
+-- Tagihan Policy
+CREATE POLICY "Tagihan access" ON tagihan FOR ALL TO authenticated USING (true);
+
+-- Alokasi Pembayaran Policy
+CREATE POLICY "Alokasi Pembayaran access" ON alokasi_pembayaran FOR ALL TO authenticated USING (true);
 

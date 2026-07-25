@@ -103,12 +103,14 @@ export default function LaporanPage() {
             display['Nominal'] = formatRupiah(flat.nominal);
             display['Metode'] = flat.metode_pembayaran;
           } else if (jenis === 'tunggakan') {
-            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
-            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : flat.unit;
+            display['Penyewa'] = flat.kontrak_sewa?.penyewa?.nama;
+            display['Unit'] = flat.kontrak_sewa?.unit?.kode_unit;
             display['Periode'] = flat.periode;
-            display['Nominal'] = formatRupiah(flat.nominal);
-            display['Jatuh Tempo'] = formatTanggal(flat.jatuh_tempo);
-            display['Status'] = flat.status_pembayaran;
+            display['Tagihan'] = formatRupiah(flat.total_tagihan);
+            display['Terbayar'] = formatRupiah(flat.terbayar);
+            display['Kurang'] = formatRupiah(flat.total_tagihan - flat.terbayar);
+            display['Jatuh Tempo'] = formatTanggal(flat.kontrak_sewa?.jatuh_tempo || flat.jatuh_tempo);
+            display['Status'] = flat.status_tagihan;
           } else if (jenis === 'pembayaran') {
             display['Periode'] = flat.periode;
             display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
@@ -233,14 +235,15 @@ export default function LaporanPage() {
           { header: 'Penyewa', key: 'penyewa' },
           { header: 'Unit', key: 'unit' },
           { header: 'Periode', key: 'periode' },
-          { header: 'Nominal', key: 'nominal', isCurrency: true },
+          { header: 'Tagihan', key: 'total_tagihan', isCurrency: true },
+          { header: 'Terbayar', key: 'terbayar', isCurrency: true },
           { header: 'Jatuh Tempo', key: 'jatuh_tempo', isDate: true },
-          { header: 'Status', key: 'status_pembayaran' },
+          { header: 'Status', key: 'status_tagihan' },
         ];
-        const total = excelData.reduce((s: number, i: any) => s + (i.nominal || 0), 0);
+        const total = excelData.reduce((s: number, i: any) => s + (Number(i.total_tagihan) - Number(i.terbayar || 0)), 0);
         summary = [
-          { label: 'Jumlah Tunggakan', value: excelData.length },
-          { label: 'Total Nominal', value: total, isCurrency: true }
+          { label: 'Jumlah Tagihan', value: excelData.length },
+          { label: 'Total Piutang', value: total, isCurrency: true }
         ];
       } else if (jenis === 'pembayaran') {
         excelHeaders = [

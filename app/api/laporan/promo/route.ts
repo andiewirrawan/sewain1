@@ -19,8 +19,10 @@ export async function GET(request: Request) {
       .from('promo')
       .select(`
         *,
-        pembayaran (
-          nominal_diskon
+        tagihan (
+          nominal_diskon,
+          terbayar,
+          total_tagihan
         )
       `, { count: 'exact' });
 
@@ -38,8 +40,8 @@ export async function GET(request: Request) {
 
     const result = data.map((p: any) => ({
       ...p,
-      jumlah_digunakan: p.pembayaran?.length || 0,
-      total_potongan: p.pembayaran?.reduce((sum: number, pay: any) => sum + (pay.nominal_diskon || 0), 0) || 0
+      jumlah_digunakan: p.tagihan?.length || 0,
+      total_potongan: p.tagihan?.reduce((sum: number, t: any) => sum + Number(t.nominal_diskon || 0), 0) || 0
     }));
 
     if (noPagination) {

@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   Settings,
-  PieChart
+  PieChart,
+  Receipt
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -22,6 +23,7 @@ const menuItems = [
   { name: 'Master Unit', href: '/unit', icon: Building2 },
   { name: 'Master Penyewa', href: '/penyewa', icon: Users },
   { name: 'Kontrak', href: '/kontrak', icon: FileText },
+  { name: 'Tagihan', href: '/tagihan', icon: Receipt },
   { name: 'Pembayaran', href: '/pembayaran', icon: CreditCard },
   { name: 'Laporan', href: '/laporan', icon: PieChart },
 ];

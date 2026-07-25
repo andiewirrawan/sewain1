@@ -1,54 +1,51 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { NextResponse, NextRequest } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getUserFromRequest } from '@/lib/auth';
 import { catatAuditLog } from '@/lib/audit';
 import { getPagination, formatPaginatedResponse } from '@/lib/pagination';
 
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const user = await getUserFromRequest(request as any);
+    const user = await getUserFromRequest(req);
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const bulan = searchParams.get('bulan');
-    const tahun = searchParams.get('tahun');
-    const status = searchParams.get('status');
+    const { searchParams } = new URL(req.url);
+    const id_penyewa = searchParams.get('id_penyewa');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search');
 
     const { from, to } = getPagination(page, limit);
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('pembayaran')
       .select(`
         *,
-        kontrak_sewa (
-          *,
-          unit (*),
-          penyewa (*)
+        penyewa (nama),
+        alokasi_pembayaran (
+          id_alokasi,
+          nominal_alokasi,
+          tagihan (
+            periode,
+            kontrak_sewa (
+              unit (kode_unit)
+            )
+          )
         )
       `, { count: 'exact' });
 
-    if (bulan && tahun) {
-      const periode = `${bulan}-${tahun}`;
-      query = query.eq('periode', periode);
-    } else if (tahun) {
-      query = query.like('periode', `%-${tahun}`);
-    }
-
-    if (status && status !== 'Semua') {
-      query = query.eq('status_pembayaran', status);
+    if (id_penyewa) {
+      query = query.eq('id_penyewa', id_penyewa);
     }
 
     if (search) {
-      query = query.or(`periode.ilike.%${search}%,kontrak_sewa(nomor_kontrak).ilike.%${search}%,kontrak_sewa(penyewa(nama)).ilike.%${search}%`);
+      query = query.or(`penyewa(nama).ilike.%${search}%,metode_pembayaran.ilike.%${search}%`);
     }
 
     const { data, count, error } = await query
-      .order('periode', { ascending: false })
+      .order('tanggal_bayar', { ascending: false })
       .range(from, to);
 
     if (error) {
@@ -61,83 +58,124 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const user = await getUserFromRequest(request as any);
+    const user = await getUserFromRequest(req);
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await req.json();
     const { 
-      id_kontrak, 
-      periode, 
+      id_penyewa, 
       tanggal_bayar, 
       nominal, 
       status_pembayaran, 
       metode_pembayaran, 
-      catatan,
-      harga_normal,
-      jenis_diskon,
-      nilai_diskon,
-      nominal_diskon,
-      total_tagihan,
-      id_promo,
-      nama_promo_snapshot,
-      persentase_snapshot
+      catatan
     } = body;
 
-    if (!id_kontrak || !periode || !tanggal_bayar || nominal === undefined || !status_pembayaran || !metode_pembayaran) {
-      return NextResponse.json({ message: 'Field wajib diisi: Kontrak, Periode, Tanggal Bayar, Nominal, Status, Metode' }, { status: 400 });
+    if (!id_penyewa || !tanggal_bayar || nominal === undefined || !status_pembayaran || !metode_pembayaran) {
+      return NextResponse.json({ message: 'Field wajib diisi: Penyewa, Tanggal Bayar, Nominal, Status, Metode' }, { status: 400 });
     }
 
-    // Explicit duplicate check as requested
-    const { data: existingPayment } = await supabase
-      .from('pembayaran')
-      .select('id_pembayaran')
-      .eq('id_kontrak', id_kontrak)
-      .eq('periode', periode)
-      .maybeSingle();
+    const nominalBayar = parseFloat(nominal);
 
-    if (existingPayment) {
-      return NextResponse.json({ message: 'Pembayaran untuk periode ini sudah ada.' }, { status: 409 });
-    }
-
-    const { data: pembayaranData, error } = await supabase
+    // 1. Simpan data Pembayaran (Header)
+    const { data: pembayaranData, error: errPembayaran } = await supabaseAdmin
       .from('pembayaran')
       .insert([
         {
-          id_kontrak,
-          periode,
+          id_penyewa,
           tanggal_bayar,
-          nominal,
+          nominal: nominalBayar,
           status_pembayaran,
           metode_pembayaran,
-          catatan,
-          harga_normal,
-          jenis_diskon,
-          nilai_diskon,
-          nominal_diskon,
-          total_tagihan,
-          id_promo,
-          nama_promo_snapshot,
-          persentase_snapshot
+          catatan
         }
       ])
       .select()
       .single();
 
-    if (error) {
-      if (error.code === '23505') {
-        return NextResponse.json({ message: 'Pembayaran untuk periode ini sudah ada.' }, { status: 409 });
+    if (errPembayaran) throw errPembayaran;
+
+    // 2. Ambil Tagihan tertunggak (FIFO)
+    // Ambil tagihan yang belum lunas milik penyewa ini (melalui kontrak_sewa)
+    const { data: tagihanList, error: errTagihan } = await supabaseAdmin
+      .from('tagihan')
+      .select('*, kontrak_sewa!inner(id_penyewa)')
+      .eq('kontrak_sewa.id_penyewa', id_penyewa)
+      .neq('status_tagihan', 'Lunas')
+      .order('periode', { ascending: true }); // MM-YYYY sort might be tricky, but usually works for basic comparison if formatted consistently or we use date
+
+    if (errTagihan) throw errTagihan;
+
+    // Sort manual jika diperlukan (MM-YYYY logic)
+    // MM-YYYY -> YYYY-MM untuk sorting yang benar
+    const sortedTagihan = (tagihanList || []).sort((a, b) => {
+      const [ma, ya] = a.periode.split('-');
+      const [mb, yb] = b.periode.split('-');
+      return `${ya}-${ma}`.localeCompare(`${yb}-${mb}`);
+    });
+
+    let sisaNominal = nominalBayar;
+    const alokasiInserts = [];
+    const tagihanUpdates = [];
+
+    for (const t of sortedTagihan) {
+      if (sisaNominal <= 0) break;
+
+      const kurang = parseFloat(t.total_tagihan) - parseFloat(t.terbayar || 0);
+      const alokasi = Math.min(sisaNominal, kurang);
+
+      if (alokasi > 0) {
+        alokasiInserts.push({
+          id_pembayaran: pembayaranData.id_pembayaran,
+          id_tagihan: t.id_tagihan,
+          nominal_alokasi: alokasi
+        });
+
+        const newTerbayar = parseFloat(t.terbayar || 0) + alokasi;
+        let newStatus = 'Sebagian';
+        if (Math.abs(newTerbayar - parseFloat(t.total_tagihan)) < 0.01) {
+          newStatus = 'Lunas';
+        }
+
+        tagihanUpdates.push(
+          supabaseAdmin
+            .from('tagihan')
+            .update({ 
+              terbayar: newTerbayar, 
+              status_tagihan: newStatus,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id_tagihan', t.id_tagihan)
+        );
+
+        sisaNominal -= alokasi;
       }
-      return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    await catatAuditLog(user, 'CREATE', 'pembayaran', pembayaranData.id_pembayaran, null, pembayaranData);
+    // 3. Eksekusi alokasi dan update tagihan
+    if (alokasiInserts.length > 0) {
+      const { error: errAlokasi } = await supabaseAdmin
+        .from('alokasi_pembayaran')
+        .insert(alokasiInserts);
+      
+      if (errAlokasi) throw errAlokasi;
+
+      // Jalankan semua update tagihan
+      await Promise.all(tagihanUpdates);
+    }
+
+    await catatAuditLog(user, 'CREATE_PAYMENT_FIFO', 'pembayaran', pembayaranData.id_pembayaran, null, {
+      pembayaran: pembayaranData,
+      alokasi: alokasiInserts
+    });
 
     return NextResponse.json(pembayaranData, { status: 201 });
   } catch (error: any) {
+    console.error('Payment FIFO error:', error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

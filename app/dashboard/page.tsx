@@ -42,7 +42,8 @@ export default function DashboardPage() {
     { title: 'Unit Kosong', value: data?.unit_kosong, icon: Building2, color: 'text-amber-600', bg: 'bg-amber-100' },
     { title: 'Penyewa Aktif', value: data?.penyewa_aktif, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-100' },
     { title: 'Kontrak Aktif', value: data?.kontrak_aktif, icon: ReceiptText, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { title: 'Tunggakan', value: data?.tunggakan_bulan_ini, icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-100' },
+    { title: 'Total Piutang', value: formatRupiah(data?.total_piutang), icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-100' },
+    { title: 'Tagihan Belum Lunas', value: data?.jumlah_tagihan_tertunggak, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100' },
     { title: 'Pendapatan Bulan Ini', value: formatRupiah(data?.pendapatan_bulan_ini), icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-100' },
     { title: 'Pendapatan Tahun Ini', value: formatRupiah(data?.pendapatan_tahun_ini), icon: Wallet, color: 'text-purple-600', bg: 'bg-purple-100' },
   ];
