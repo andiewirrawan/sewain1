@@ -37,9 +37,6 @@ export async function POST(req: NextRequest) {
     // Generate JWT
     const userId = user.id || user.id_user;
     
-    // Update last login
-    await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', userId);
-
     const token = await generateToken({
       id: userId,
       nama: user.nama,
