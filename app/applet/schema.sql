@@ -193,12 +193,15 @@ CREATE INDEX idx_alokasi_tagihan ON alokasi_pembayaran(id_tagihan);
 
 -- Function: handle_updated_at
 CREATE OR REPLACE FUNCTION handle_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Trigger Updated At
 CREATE TRIGGER set_updated_at_promo BEFORE UPDATE ON promo FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
@@ -460,11 +463,15 @@ $$;
 
 -- Function: execute_sql (Internal Utility for Migrations)
 CREATE OR REPLACE FUNCTION execute_sql(sql TEXT)
-RETURNS VOID AS $$
+RETURNS VOID 
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   EXECUTE sql;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 8. ROW LEVEL SECURITY (RLS)
 BEGIN;
