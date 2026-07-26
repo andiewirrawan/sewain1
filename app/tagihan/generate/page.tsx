@@ -30,7 +30,14 @@ export default function GenerateTagihanPage() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!periode || !jatuhTempo) return;
+    if (!periode) {
+      alert('Pilih bulan dan tahun terlebih dahulu.');
+      return;
+    }
+    if (!jatuhTempo) {
+      alert('Tentukan tanggal jatuh tempo.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -44,7 +51,7 @@ export default function GenerateTagihanPage() {
       if (res.ok) {
         setResult({ success: true, message: data.message, count: data.count });
       } else {
-        setResult({ success: false, message: data.message });
+        setResult({ success: false, message: data.message || 'Terjadi kesalahan' });
       }
     } catch (err: any) {
       setResult({ success: false, message: 'Terjadi kesalahan sistem' });
@@ -108,8 +115,8 @@ export default function GenerateTagihanPage() {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                     onChange={(e) => {
                       const month = e.target.value;
-                      const year = (document.getElementById('year-select') as HTMLSelectElement).value;
-                      if (month && year) setPeriode(`${month}-${year}`);
+                      const year = (document.getElementById('year-select') as HTMLSelectElement)?.value || String(currentYear);
+                      if (month) setPeriode(`${month}-${year}`);
                     }}
                   >
                     <option value="">Pilih Bulan</option>
@@ -126,8 +133,8 @@ export default function GenerateTagihanPage() {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                     onChange={(e) => {
                       const year = e.target.value;
-                      const month = (document.querySelector('select[required]') as HTMLSelectElement).value;
-                      if (month && year) setPeriode(`${month}-${year}`);
+                      const month = (document.querySelector('select[required]') as HTMLSelectElement)?.value;
+                      if (month) setPeriode(`${month}-${year}`);
                     }}
                   >
                     {years.map(y => (
