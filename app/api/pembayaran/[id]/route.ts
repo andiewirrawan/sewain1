@@ -131,7 +131,7 @@ export async function DELETE(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'Owner') {
+    if (user.role !== 'Owner' && user.role !== 'System Owner') {
       return NextResponse.json({ message: 'Forbidden: Owner only' }, { status: 403 });
     }
 

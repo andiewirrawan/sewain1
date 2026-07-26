@@ -45,12 +45,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getUserFromRequest(req);
-    if (!user || user.role === 'Admin') {
-      return NextResponse.json({ message: 'Unauthorized: Hanya Owner/System Owner yang dapat membuat tagihan manual' }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { id_kontrak, periode, jatuh_tempo, nominal_tagihan, id_promo, nominal_diskon, total_tagihan, catatan } = body;
+    const { id_kontrak, periode, jatuh_tempo, nominal_tagihan, id_promo, nominal_diskon, total_tagihan,
+           catatan } = body;
 
     const { data, error } = await supabaseAdmin
       .from('tagihan')
@@ -62,7 +63,8 @@ export async function POST(req: NextRequest) {
           nominal_tagihan, 
           id_promo, 
           nominal_diskon, 
-          total_tagihan, 
+          total_tagihan,
+           
           catatan,
           status_tagihan: 'Belum Bayar',
           terbayar: 0

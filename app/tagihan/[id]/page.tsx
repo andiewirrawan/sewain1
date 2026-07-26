@@ -26,11 +26,13 @@ export default function TagihanDetailPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const [waLogs, setWaLogs] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDetail();
+    try { const u = JSON.parse(localStorage.getItem('user') || '{}'); setUserRole(u.role); } catch(e) {}
     fetchWaLogs();
   }, [id]);
 
@@ -96,6 +98,7 @@ export default function TagihanDetailPage() {
       });
       if (!res.ok) throw new Error('Gagal memperbarui status');
       fetchDetail();
+    try { const u = JSON.parse(localStorage.getItem('user') || '{}'); setUserRole(u.role); } catch(e) {}
     } catch (err: any) {
       alert(err.message);
     }
@@ -248,12 +251,14 @@ export default function TagihanDetailPage() {
                   Kirim WA Tagihan
                 </button>
                 <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={() => handleUpdateStatus('Write Off')}
-                    className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all text-xs"
-                  >
-                    Write Off
-                  </button>
+                  {userRole !== 'Admin' && (
+                    <button 
+                      onClick={() => handleUpdateStatus('Write Off')}
+                      className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all text-xs"
+                    >
+                      Write Off
+                    </button>
+                  )}
                   <button 
                     onClick={() => handleUpdateStatus('Dibatalkan')}
                     className="flex items-center justify-center gap-2 bg-rose-50 text-rose-700 py-3 rounded-xl font-bold hover:bg-rose-100 transition-all text-xs"

@@ -72,7 +72,7 @@ export default function PengaturanPage() {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       
-      if (parsedUser?.role !== 'Owner') {
+      if (parsedUser?.role !== 'Owner' && parsedUser?.role !== 'System Owner') {
         router.push('/dashboard');
       } else {
         fetchAllData();
@@ -141,13 +141,13 @@ export default function PengaturanPage() {
   };
 
   useEffect(() => {
-    if (user?.role === 'Owner') {
+    if ((user?.role === 'Owner' || user?.role === 'System Owner')) {
       fetchUsers();
     }
   }, [userPage, userLimit, searchUser, filterRole, filterStatus]);
 
   useEffect(() => {
-    if (user?.role === 'Owner') {
+    if ((user?.role === 'Owner' || user?.role === 'System Owner')) {
       fetchLogs();
     }
   }, [logPage, logLimit]);
@@ -341,7 +341,7 @@ export default function PengaturanPage() {
     }
   };
 
-  if (!user || user.role !== 'Owner') {
+  if (!user || user.role !== 'Owner' && user.role !== 'System Owner') {
     return <div className="p-8 text-center text-slate-500">Memverifikasi akses...</div>;
   }
 

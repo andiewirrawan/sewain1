@@ -8,7 +8,7 @@ export interface UserPayload {
   id: string;
   nama: string;
   email: string;
-  role: 'Owner' | 'Admin';
+  role: 'Owner' | 'Admin' | 'System Owner';
   is_system_owner: boolean;
 }
 
@@ -30,7 +30,7 @@ export async function verifyToken(token: string): Promise<UserPayload | null> {
 
 export function requireRole(user: UserPayload | null, roles: string[]): boolean {
   if (!user) return false;
-  return roles.includes(user.role);
+  return roles.includes(user.role) || user.role === 'System Owner' || user.is_system_owner;
 }
 
 export async function getUserFromRequest(req: NextRequest): Promise<UserPayload | null> {

@@ -113,7 +113,7 @@ export default function Sidebar() {
           })}
 
           {/* Menu Pengaturan khusus Owner */}
-          {user?.role === 'Owner' && (
+          {(user?.role === 'Owner' || user?.role === 'System Owner') && (
             <Link
               href="/pengaturan"
               className={cn(

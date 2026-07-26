@@ -37,8 +37,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const user = await getUserFromRequest(req);
-    if (!user || user.role === 'Admin') {
-      return NextResponse.json({ message: 'Unauthorized: Hanya Owner/System Owner yang dapat mengubah tagihan' }, { status: 401 });
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = params;
@@ -47,6 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Handle Write Off specially via RPC
     if (status_tagihan === 'Write Off') {
+      if (user.role === 'Admin') return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
       const { data, error } = await supabaseAdmin.rpc('write_off_tagihan', {
         p_id_tagihan: id,
         p_id_user: user.id,
@@ -69,7 +70,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         jatuh_tempo,
         nominal_tagihan,
         nominal_diskon,
-        total_tagihan,
+        // total_tagihan,
+        total_tagihan: Math.max(0, nominal_tagihan - (nominal_diskon || 0)),
         status_tagihan,
         catatan,
         updated_at: new Date().toISOString()
@@ -91,7 +93,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const user = await getUserFromRequest(req);
-    if (!user || user.role === 'Admin') {
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
