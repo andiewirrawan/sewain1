@@ -43,8 +43,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const { id } = params;
     const body = await req.json();
-    const { jatuh_tempo, nominal_tagihan, nominal_diskon, total_tagihan, status_tagihan, catatan, alasan_perubahan } = body;
+    const { status_tagihan, catatan, alasan_perubahan } = body;
 
+    // Handle Write Off specially via RPC
+    if (status_tagihan === 'Write Off') {
+      const { data, error } = await supabaseAdmin.rpc('write_off_tagihan', {
+        p_id_tagihan: id,
+        p_id_user: user.id,
+        p_catatan: alasan_perubahan || catatan || 'Write off'
+      });
+
+      if (error) throw error;
+      const result = data as any;
+      if (!result.success) return NextResponse.json({ message: result.message }, { status: 400 });
+
+      return NextResponse.json({ message: 'Tagihan berhasil di-write off' });
+    }
+
+    const { jatuh_tempo, nominal_tagihan, nominal_diskon, total_tagihan } = body;
     const { data: oldData } = await supabaseAdmin.from('tagihan').select('*').eq('id_tagihan', id).single();
 
     const { data, error } = await supabaseAdmin

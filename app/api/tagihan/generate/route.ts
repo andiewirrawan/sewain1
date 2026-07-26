@@ -15,183 +15,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Periode dan Tanggal Jatuh Tempo wajib diisi' }, { status: 400 });
     }
 
-    // 1. Ambil semua kontrak aktif
-    const { data: kontrakAktif, error: errKontrak } = await supabaseAdmin
-      .from('kontrak_sewa')
-      .select(`
-        id_kontrak,
-        id_unit,
-        id_penyewa,
-        unit (harga_sewa),
-        penyewa (
-          id_penyewa,
-          promo_penyewa (
-            promo (*)
-          )
-        )
-      `)
-      .eq('status_kontrak', 'Aktif');
-
-    if (errKontrak) throw errKontrak;
-
-    // 2. Filter kontrak yang sudah punya tagihan di periode ini
-    const { data: tagihanEksis, error: errEksis } = await supabaseAdmin
-      .from('tagihan')
-      .select('id_kontrak')
-      .eq('periode', periode);
-
-    if (errEksis) throw errEksis;
-    const eksisIds = new Set(tagihanEksis?.map(t => t.id_kontrak));
-
-    const kontrakToGenerate = kontrakAktif.filter(k => !eksisIds.has(k.id_kontrak));
-
-    if (kontrakToGenerate.length === 0) {
-      return NextResponse.json({ message: 'Seluruh kontrak sudah memiliki tagihan untuk periode ini' }, { status: 400 });
-    }
-
-    let totalNominal = 0;
-    const now = new Date();
-
-    const tagihanInserts = kontrakToGenerate.map(k => {
-      const hargaNormal = k.unit?.harga_sewa || 0;
-      
-      // Cari promo aktif
-      const activePromos = k.penyewa?.promo_penyewa
-        ?.map((item: any) => item.promo)
-        ?.filter((p: any) => {
-          if (!p || p.status !== 'Aktif') return false;
-          const startDate = new Date(p.tanggal_mulai);
-          const endDate = new Date(p.tanggal_selesai);
-          endDate.setHours(23, 59, 59, 999);
-          return startDate <= now && endDate >= now;
-        }) || [];
-      
-      const active = activePromos.sort((a: any, b: any) => {
-        if ((b.prioritas || 0) !== (a.prioritas || 0)) {
-          return (b.prioritas || 0) - (a.prioritas || 0);
-        }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      })[0] || null;
-
-      let nominalDiskon = 0;
-      if (active) {
-        if (active.jenis_diskon === 'Persen') {
-          nominalDiskon = (hargaNormal * active.nilai_diskon) / 100;
-        } else {
-          nominalDiskon = Math.min(active.nilai_diskon, hargaNormal);
-        }
-      }
-
-      const totalTagihan = hargaNormal - nominalDiskon;
-      totalNominal += totalTagihan;
-
-      return {
-        id_kontrak: k.id_kontrak,
-        periode,
-        jatuh_tempo,
-        nominal_tagihan: hargaNormal,
-        id_promo: active?.id_promo || null,
-        nominal_diskon,
-        total_tagihan: totalTagihan,
-        status_tagihan: 'Belum Bayar',
-        terbayar: 0
-      };
+    // Call PostgreSQL Function (RPC) for safe, transactional generation
+    const { data, error } = await supabaseAdmin.rpc('generate_tagihan_periode', {
+      p_periode: periode,
+      p_user_id: user.id
     });
 
-    // 3. Simpan tagihan dan Tangani Saldo Titipan
-    const { data: newTagihans, error: errInsert } = await supabaseAdmin
-      .from('tagihan')
-      .insert(tagihanInserts)
-      .select();
-
-    if (errInsert) throw errInsert;
-
-    // 4. Cek Saldo Titipan untuk setiap penyewa dan alokasikan otomatis
-    for (const nt of newTagihans) {
-      const k = kontrakToGenerate.find(kg => kg.id_kontrak === nt.id_kontrak);
-      if (!k) continue;
-
-      // Ambil saldo terbaru penyewa
-      const { data: penyewa } = await supabaseAdmin
-        .from('penyewa')
-        .select('saldo_titipan')
-        .eq('id_penyewa', k.id_penyewa)
-        .single();
-      
-      if (penyewa && parseFloat(penyewa.saldo_titipan || 0) > 0) {
-        const saldo = parseFloat(penyewa.saldo_titipan);
-        const bill = parseFloat(nt.total_tagihan);
-        const alokasi = Math.min(saldo, bill);
-
-        if (alokasi > 0) {
-          // Buat Pembayaran Otomatis dari Saldo Titipan
-          const { data: pData, error: pErr } = await supabaseAdmin
-            .from('pembayaran')
-            .insert([{
-              id_penyewa: k.id_penyewa,
-              tanggal_bayar: new Date().toISOString(),
-              nominal: alokasi,
-              status_pembayaran: 'Lunas',
-              metode_pembayaran: 'Saldo Titipan',
-              periode: nt.periode, // Ditambahkan
-              catatan: `Alokasi otomatis dari deposit untuk periode ${nt.periode}`
-            }])
-            .select()
-            .single();
-          
-          if (!pErr) {
-            // Catat Alokasi
-            await supabaseAdmin.from('alokasi_pembayaran').insert([{
-              id_pembayaran: pData.id_pembayaran,
-              id_tagihan: nt.id_tagihan,
-              nominal_alokasi: alokasi
-            }]);
-
-            // Update Tagihan
-            const newTerbayar = alokasi;
-            const newStatus = Math.abs(newTerbayar - bill) < 0.01 ? 'Lunas' : 'Sebagian';
-            await supabaseAdmin.from('tagihan').update({
-              terbayar: newTerbayar,
-              status_tagihan: newStatus
-            }).eq('id_tagihan', nt.id_tagihan);
-
-            // Update Saldo Titipan Penyewa
-            await supabaseAdmin.from('penyewa').update({
-              saldo_titipan: saldo - alokasi
-            }).eq('id_penyewa', k.id_penyewa);
-
-            await catatAuditLog(user, 'AUTO_ALLOCATE_DEPOSIT', 'tagihan', nt.id_tagihan, null, {
-              alokasi,
-              id_pembayaran: pData.id_pembayaran,
-              sisa_saldo: saldo - alokasi
-            });
-          }
-        }
-      }
+    if (error) throw error;
+    
+    const result = data as any;
+    if (!result.success) {
+      return NextResponse.json({ message: result.message }, { status: 400 });
     }
 
-    // 4. Catat riwayat generate
-    const { data: riwayat, error: errRiwayat } = await supabaseAdmin
-      .from('riwayat_generate_tagihan')
-      .insert([
-        {
-          periode,
-          id_user: user.id,
-          jumlah_tagihan: tagihanInserts.length,
-          total_nominal: totalNominal,
-          status: 'Selesai'
-        }
-      ])
-      .select()
-      .single();
-
-    if (errRiwayat) throw errRiwayat;
-
-    await catatAuditLog(user, 'GENERATE_TAGIHAN', 'tagihan', riwayat.id_generate, null, riwayat);
+    await catatAuditLog(user, 'GENERATE_TAGIHAN_RPC', 'riwayat_generate_tagihan', periode, null, result);
 
     return NextResponse.json({ 
-      message: `Berhasil membuat ${tagihanInserts.length} tagihan`,
-      count: tagihanInserts.length
+      message: `Berhasil membuat ${result.count || 0} tagihan`,
+      count: result.count
     });
 
   } catch (error: any) {

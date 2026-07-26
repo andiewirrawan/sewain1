@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS penyewa (
     id_penyewa UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nama TEXT NOT NULL,
     nik TEXT NOT NULL,
-    alamat TEXT, -- Ditambahkan kembali karena digunakan di API
+    alamat TEXT,
     email TEXT,
     whatsapp TEXT NOT NULL,
     kontak_darurat TEXT NOT NULL,
@@ -218,7 +218,284 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_wa_penyewa ON log_wa_tagihan(id_penyewa);
 
 -- =================================================================================
--- 6. TRIGGERS (Updated At)
+-- 6. RPC FUNCTIONS (CORE LOGIC & TRANSACTIONS)
+-- =================================================================================
+
+-- 6.1 Function: Generate Tagihan Periode (Idempotent, Transactional)
+CREATE OR REPLACE FUNCTION generate_tagihan_periode(p_periode TEXT, p_user_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_count INTEGER := 0;
+    v_total NUMERIC(15,2) := 0;
+    v_kontrak RECORD;
+    v_id_tagihan UUID;
+    v_nominal_tagihan NUMERIC(15,2);
+    v_id_promo UUID;
+    v_nilai_diskon NUMERIC(15,2);
+    v_jenis_diskon jenis_diskon_type;
+    v_nominal_diskon NUMERIC(15,2);
+    v_total_tagihan NUMERIC(15,2);
+    v_jatuh_tempo DATE;
+    v_bulan INTEGER;
+    v_tahun INTEGER;
+    v_saldo_penyewa NUMERIC(15,2);
+    v_alokasi_deposit NUMERIC(15,2);
+    v_id_pembayaran UUID;
+BEGIN
+    -- 1. Validate period format MM-YYYY
+    IF p_periode !~ '^[0-9]{2}-[0-9]{4}$' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Format periode harus MM-YYYY');
+    END IF;
+
+    -- 2. Check if already generated (skip check to allow partial regeneration of missing bills)
+    -- But we will record the main execution in history
+
+    v_bulan := split_part(p_periode, '-', 1)::INTEGER;
+    v_tahun := split_part(p_periode, '-', 2)::INTEGER;
+
+    -- 3. Loop active contracts
+    FOR v_kontrak IN 
+        SELECT k.*, u.harga_sewa
+        FROM kontrak_sewa k
+        JOIN unit u ON k.id_unit = u.id_unit
+        WHERE k.status_kontrak = 'Aktif'
+    LOOP
+        -- Skip if bill already exists for this contract and period
+        IF EXISTS (SELECT 1 FROM tagihan WHERE id_kontrak = v_kontrak.id_kontrak AND periode = p_periode) THEN
+            CONTINUE;
+        END IF;
+
+        v_nominal_tagihan := v_kontrak.harga_sewa;
+        
+        -- Logic to handle date overflow
+        BEGIN
+            v_jatuh_tempo := make_date(v_tahun, v_bulan, LEAST(v_kontrak.tanggal_jatuh_tempo, 28));
+        EXCEPTION WHEN OTHERS THEN
+            v_jatuh_tempo := (date_trunc('month', make_date(v_tahun, v_bulan, 1)) + interval '1 month' - interval '1 day')::DATE;
+        END;
+
+        -- Apply Promo
+        SELECT pr.id_promo, pr.nilai_diskon, pr.jenis_diskon 
+        INTO v_id_promo, v_nilai_diskon, v_jenis_diskon
+        FROM promo pr
+        JOIN promo_penyewa pp ON pr.id_promo = pp.id_promo
+        WHERE pp.id_penyewa = v_kontrak.id_penyewa
+        AND pr.status = 'Aktif'
+        AND v_jatuh_tempo BETWEEN pr.tanggal_mulai AND pr.tanggal_selesai
+        LIMIT 1;
+
+        IF v_id_promo IS NOT NULL THEN
+            IF v_jenis_diskon = 'Persen' THEN
+                v_nominal_diskon := v_nominal_tagihan * (v_nilai_diskon / 100);
+            ELSE
+                v_nominal_diskon := v_nilai_diskon;
+            END IF;
+        ELSE
+            v_nominal_diskon := 0;
+        END IF;
+
+        v_total_tagihan := GREATEST(v_nominal_tagihan - v_nominal_diskon, 0);
+
+        -- Insert Tagihan
+        INSERT INTO tagihan (
+            id_kontrak, periode, jatuh_tempo, nominal_tagihan, 
+            id_promo, nominal_diskon, total_tagihan, status_tagihan
+        ) VALUES (
+            v_kontrak.id_kontrak, p_periode, v_jatuh_tempo, v_nominal_tagihan,
+            v_id_promo, v_nominal_diskon, v_total_tagihan, 'Belum Bayar'
+        ) RETURNING id_tagihan INTO v_id_tagihan;
+
+        v_count := v_count + 1;
+        v_total := v_total + v_total_tagihan;
+
+    -- 1. Lock penyewa to prevent concurrent payment issues
+        SELECT saldo_titipan INTO v_saldo_penyewa 
+        FROM penyewa p
+        WHERE p.id_penyewa = v_kontrak.id_penyewa 
+        FOR UPDATE;
+        
+        IF v_saldo_penyewa > 0 AND v_total_tagihan > 0 THEN
+            v_alokasi_deposit := LEAST(v_saldo_penyewa, v_total_tagihan);
+            
+            -- Record payment from deposit
+            INSERT INTO pembayaran (
+                id_kontrak, id_penyewa, periode, tanggal_bayar, 
+                nominal, status_pembayaran, metode_pembayaran, catatan
+            ) VALUES (
+                v_kontrak.id_kontrak, v_kontrak.id_penyewa, p_periode, CURRENT_DATE,
+                v_alokasi_deposit, 'Lunas', 'Saldo Titipan', 'Alokasi otomatis dari deposit saat generate tagihan'
+            ) RETURNING id_pembayaran INTO v_id_pembayaran;
+
+            -- Allocation
+            INSERT INTO alokasi_pembayaran (id_pembayaran, id_tagihan, nominal_alokasi)
+            VALUES (v_id_pembayaran, v_id_tagihan, v_alokasi_deposit);
+
+            -- Update Tagihan state
+            UPDATE tagihan SET 
+                terbayar = v_alokasi_deposit,
+                status_tagihan = CASE WHEN v_alokasi_deposit >= v_total_tagihan THEN 'Lunas' ELSE 'Sebagian' END
+            WHERE id_tagihan = v_id_tagihan;
+
+            -- Deduct from penyewa's deposit
+            UPDATE penyewa p SET saldo_titipan = p.saldo_titipan - v_alokasi_deposit WHERE p.id_penyewa = v_kontrak.id_penyewa;
+        END IF;
+    END LOOP;
+
+    -- 5. Record final result in history
+    INSERT INTO riwayat_generate_tagihan (periode, id_user, jumlah_tagihan, total_nominal, status)
+    VALUES (p_periode, p_user_id, v_count, v_total, 'Selesai');
+
+    RETURN jsonb_build_object('success', true, 'count', v_count, 'total', v_total);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+-- 6.2 Function: Proses Pembayaran FIFO (Transaction, Concurrency Safe)
+CREATE OR REPLACE FUNCTION proses_pembayaran_fifo(
+    p_id_penyewa UUID,
+    p_id_kontrak UUID,
+    p_periode TEXT,
+    p_tanggal_bayar DATE,
+    p_nominal NUMERIC,
+    p_metode_pembayaran TEXT,
+    p_id_user UUID,
+    p_catatan TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_pool NUMERIC(15,2);
+    v_initial_deposit NUMERIC(15,2);
+    v_id_pembayaran UUID;
+    v_tagihan RECORD;
+    v_alokasi NUMERIC(15,2);
+    v_sisa_tagihan NUMERIC(15,2);
+    v_user_role TEXT;
+BEGIN
+    -- 1. Lock penyewa to prevent concurrent payment issues
+    SELECT saldo_titipan INTO v_initial_deposit FROM penyewa p WHERE p.id_penyewa = p_id_penyewa FOR UPDATE;
+    
+    -- Total money available = current payment + existing deposit
+    v_pool := p_nominal + v_initial_deposit;
+
+    IF v_pool <= 0 AND p_nominal <= 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Nominal pembayaran tidak valid');
+    END IF;
+
+    -- 2. Insert main payment record
+    INSERT INTO pembayaran (
+        id_kontrak, id_penyewa, periode, tanggal_bayar, 
+        nominal, status_pembayaran, metode_pembayaran, catatan
+    ) VALUES (
+        p_id_kontrak, p_id_penyewa, p_periode, p_tanggal_bayar,
+        p_nominal, 'Lunas', p_metode_pembayaran, p_catatan
+    ) RETURNING id_pembayaran INTO v_id_pembayaran;
+
+    -- 3. FIFO Allocation loop
+    FOR v_tagihan IN 
+        SELECT t.* 
+        FROM tagihan t
+        JOIN kontrak_sewa k ON t.id_kontrak = k.id_kontrak
+        WHERE k.id_penyewa = p_id_penyewa
+        AND t.status_tagihan NOT IN ('Lunas', 'Dibatalkan', 'Write Off')
+        ORDER BY t.jatuh_tempo ASC
+        FOR UPDATE -- Lock each bill row
+    LOOP
+        IF v_pool <= 0 THEN
+            EXIT;
+        END IF;
+
+        v_sisa_tagihan := v_tagihan.total_tagihan - v_tagihan.terbayar;
+        v_alokasi := LEAST(v_pool, v_sisa_tagihan);
+
+        IF v_alokasi > 0 THEN
+            -- Link payment to bill
+            INSERT INTO alokasi_pembayaran (id_pembayaran, id_tagihan, nominal_alokasi)
+            VALUES (v_id_pembayaran, v_tagihan.id_tagihan, v_alokasi);
+
+            -- Update bill totals and status
+            UPDATE tagihan t SET 
+                terbayar = t.terbayar + v_alokasi,
+                status_tagihan = CASE 
+                    WHEN (t.terbayar + v_alokasi) >= t.total_tagihan THEN 'Lunas'::status_tagihan_type 
+                    ELSE 'Sebagian'::status_tagihan_type 
+                END,
+                updated_at = now()
+            WHERE t.id_tagihan = v_tagihan.id_tagihan;
+
+            v_pool := v_pool - v_alokasi;
+        END IF;
+    END LOOP;
+
+    -- 4. Update the tenant's deposit with whatever is left
+    UPDATE penyewa p SET saldo_titipan = v_pool WHERE p.id_penyewa = p_id_penyewa;
+
+    -- 5. Logging
+    SELECT role INTO v_user_role FROM users WHERE id = p_id_user;
+    INSERT INTO audit_log (id_user, role, aktivitas, nama_tabel, id_data, data_baru)
+    VALUES (p_id_user, COALESCE(v_user_role, 'System'), 'Pembayaran FIFO', 'pembayaran', v_id_pembayaran::TEXT, 
+            jsonb_build_object(
+                'pembayaran_id', v_id_pembayaran,
+                'nominal_bayar', p_nominal,
+                'saldo_awal', v_initial_deposit,
+                'saldo_akhir', v_pool,
+                'alokasi_total', (p_nominal + v_initial_deposit - v_pool)
+            ));
+
+    RETURN jsonb_build_object(
+        'success', true, 
+        'id_pembayaran', v_id_pembayaran, 
+        'nominal_terpotong', (p_nominal + v_initial_deposit - v_pool),
+        'sisa_saldo_titipan', v_pool
+    );
+
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+-- 6.3 Function: Write Off Tagihan (Transactional)
+CREATE OR REPLACE FUNCTION write_off_tagihan(p_id_tagihan UUID, p_id_user UUID, p_catatan TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_old_status status_tagihan_type;
+    v_user_role TEXT;
+BEGIN
+    SELECT t.status_tagihan INTO v_old_status FROM tagihan t WHERE t.id_tagihan = p_id_tagihan FOR UPDATE;
+    
+    IF v_old_status = 'Lunas' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Tagihan yang sudah lunas tidak dapat di-write off');
+    END IF;
+
+    UPDATE tagihan t SET 
+        status_tagihan = 'Write Off',
+        catatan = COALESCE(t.catatan, '') || E'\nWrite Off: ' || p_catatan,
+        updated_at = now()
+    WHERE t.id_tagihan = p_id_tagihan;
+
+    SELECT role INTO v_user_role FROM users WHERE id = p_id_user;
+    INSERT INTO audit_log (id_user, role, aktivitas, nama_tabel, id_data, data_lama, data_baru)
+    VALUES (p_id_user, COALESCE(v_user_role, 'System'), 'Write Off Tagihan', 'tagihan', p_id_tagihan::TEXT, 
+            jsonb_build_object('status', v_old_status), 
+            jsonb_build_object('status', 'Write Off', 'catatan', p_catatan));
+
+    RETURN jsonb_build_object('success', true);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+-- =================================================================================
+-- 7. TRIGGERS (Updated At)
 -- =================================================================================
 
 CREATE OR REPLACE FUNCTION handle_updated_at()
@@ -239,7 +516,7 @@ DO $$ BEGIN
 END $$;
 
 -- =================================================================================
--- 7. ROW LEVEL SECURITY (RLS)
+-- 8. ROW LEVEL SECURITY (RLS)
 -- =================================================================================
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -260,7 +537,7 @@ DO $$
 DECLARE
     t text;
 BEGIN
-    FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' 
+    FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS "%s access" ON %I', t, t);
         EXECUTE format('CREATE POLICY "%s access" ON %I FOR ALL TO authenticated USING (true)', t, t);
