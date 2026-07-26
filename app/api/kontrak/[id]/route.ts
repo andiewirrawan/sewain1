@@ -19,7 +19,8 @@ export async function GET(request: Request, context: any) {
       .select(`
         *,
         unit (*),
-        penyewa (*)
+        penyewa (*),
+        tagihan (*)
       `)
       .eq('id_kontrak', id)
       .single();

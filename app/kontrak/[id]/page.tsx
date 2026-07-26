@@ -170,8 +170,41 @@ export default function DetailKontrakPage() {
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Riwayat Pembayaran</h3>
-        <p className="text-sm text-gray-500 text-center py-8">Akan ditampilkan pada tahap selanjutnya.</p>
+        <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Riwayat Tagihan & Pembayaran</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Tagihan</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terbayar</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {kontrak.tagihan && kontrak.tagihan.length > 0 ? (
+                kontrak.tagihan.sort((a: any, b: any) => {
+                  const [ma, ya] = a.periode.split('-');
+                  const [mb, yb] = b.periode.split('-');
+                  return `${yb}-${mb}`.localeCompare(`${ya}-${ma}`);
+                }).map((t: any) => (
+                  <tr key={t.id_tagihan}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.periode}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatTanggal(t.jatuh_tempo)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatRupiah(t.total_tagihan)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">{formatRupiah(t.terbayar)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{formatStatus(t.status_tagihan)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 italic">Belum ada data tagihan</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

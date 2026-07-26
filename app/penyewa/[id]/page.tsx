@@ -133,8 +133,8 @@ export default function DetailPenyewaPage() {
         <div className="md:col-span-2 space-y-6">
           {/* 5. Ringkasan */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Ringkasan Penyewa</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4 text-center">Ringkasan Keuangan</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-xl">
                 <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Bayar</p>
                 <p className="text-sm font-bold text-gray-900">{formatRupiah(riwayat?.summary?.total_pembayaran || 0)}</p>
@@ -143,9 +143,13 @@ export default function DetailPenyewaPage() {
                 <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Tunggakan</p>
                 <p className="text-sm font-bold text-red-600">{riwayat?.summary?.jumlah_tunggakan || 0} Periode</p>
               </div>
+              <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-[10px] uppercase font-bold text-blue-500 mb-1">Saldo Titipan</p>
+                <p className="text-sm font-bold text-blue-700">{formatRupiah(penyewa.saldo_titipan || 0)}</p>
+              </div>
               <div className="text-center p-4 bg-gray-50 rounded-xl">
                 <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Lama Sewa</p>
-                <p className="text-sm font-bold text-blue-600">{riwayat?.summary?.total_lama_menyewa_hari || 0} Hari</p>
+                <p className="text-sm font-bold text-gray-600">{riwayat?.summary?.total_lama_menyewa_hari || 0} Hari</p>
               </div>
             </div>
           </div>

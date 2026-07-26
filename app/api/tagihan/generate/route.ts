@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
               nominal: alokasi,
               status_pembayaran: 'Lunas',
               metode_pembayaran: 'Saldo Titipan',
+              periode: nt.periode, // Ditambahkan
               catatan: `Alokasi otomatis dari deposit untuk periode ${nt.periode}`
             }])
             .select()

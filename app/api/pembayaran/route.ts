@@ -72,11 +72,12 @@ export async function POST(req: NextRequest) {
       nominal, 
       status_pembayaran, 
       metode_pembayaran, 
-      catatan
+      catatan,
+      periode // Ditambahkan
     } = body;
 
-    if (!id_penyewa || !tanggal_bayar || nominal === undefined || !status_pembayaran || !metode_pembayaran) {
-      return NextResponse.json({ message: 'Field wajib diisi: Penyewa, Tanggal Bayar, Nominal, Status, Metode' }, { status: 400 });
+    if (!id_penyewa || !tanggal_bayar || nominal === undefined || !status_pembayaran || !metode_pembayaran || !periode) {
+      return NextResponse.json({ message: 'Field wajib diisi: Penyewa, Tanggal Bayar, Nominal, Status, Metode, Periode' }, { status: 400 });
     }
 
     const nominalBayar = parseFloat(nominal);
@@ -91,7 +92,8 @@ export async function POST(req: NextRequest) {
           nominal: nominalBayar,
           status_pembayaran,
           metode_pembayaran,
-          catatan
+          catatan,
+          periode // Ditambahkan
         }
       ])
       .select()

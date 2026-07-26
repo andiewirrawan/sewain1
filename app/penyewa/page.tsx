@@ -7,6 +7,7 @@ import { Plus, Search, Trash2, Edit, ChevronRight, Eye } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { formatStatus } from '@/lib/format';
 import Pagination from '@/components/Pagination';
+import { cn } from '@/lib/utils';
 
 export default function PenyewaPage() {
   const router = useRouter();
@@ -129,6 +130,9 @@ export default function PenyewaPage() {
                   Jenis Usaha
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Saldo Titipan
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Unit Saat Ini
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -170,6 +174,11 @@ export default function PenyewaPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">{p.jenis_usaha || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className={cn("text-sm font-semibold", p.saldo_titipan > 0 ? "text-blue-600" : "text-gray-500")}>
+                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.saldo_titipan || 0)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{p.unit_saat_ini}</div>
