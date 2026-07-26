@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS log_wa_tagihan, riwayat_generate_tagihan, audit_log, alokasi_pembayaran, pembayaran, tagihan, promo_penyewa, promo, kontrak_sewa, penyewa, unit, users CASCADE;
 -- SEWAIN Application Database Schema (FINAL)
 -- Prepared for Supabase / PostgreSQL
 -- This script is idempotent (can be run multiple times)
