@@ -473,6 +473,13 @@ BEGIN
 END;
 $$;
 
+-- Restrict execution to prevent unauthorized access
+REVOKE ALL ON FUNCTION public.execute_sql(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.execute_sql(text) FROM anon;
+REVOKE ALL ON FUNCTION public.execute_sql(text) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.execute_sql(text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.execute_sql(text) TO postgres;
+
 -- 8. ROW LEVEL SECURITY (RLS)
 BEGIN;
 
