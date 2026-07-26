@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import LayoutWrapper from '@/components/LayoutWrapper';
 import { 
   ArrowLeft, 
   History,
@@ -37,8 +36,7 @@ export default function RiwayatGeneratePage() {
   };
 
   return (
-    <LayoutWrapper>
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
         <button 
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium"
@@ -123,6 +121,5 @@ export default function RiwayatGeneratePage() {
           </div>
         </div>
       </div>
-    </LayoutWrapper>
   );
 }
