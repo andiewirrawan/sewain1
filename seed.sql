@@ -6,7 +6,6 @@ BEGIN;
 
 -- 1. USERS (Password: password123)
 -- Hash generated via bcrypt
--- Roles: Owner, Admin, Kasir, System Owner
 INSERT INTO users (id, nama, email, password, role, is_system_owner, status) VALUES
 ('11111111-1111-1111-1111-111111111111', 'Super Admin', 'system@sewain.com', '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', 'System Owner', true, 'Aktif'),
 ('22222222-2222-2222-2222-222222222222', 'Andie Owner', 'owner@sewain.com', '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', 'Owner', false, 'Aktif'),

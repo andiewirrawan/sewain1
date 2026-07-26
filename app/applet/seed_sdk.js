@@ -1,77 +1,45 @@
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function run() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase environment variables');
-    process.exit(1);
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  console.log('--- SEEDING CRITICAL USERS ---');
-  const users = [
-    {
-      id: '11111111-1111-1111-1111-111111111111',
-      nama: 'Budi Santoso',
-      email: 'owner@sewain.com',
-      password: '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', // password123
-      role: 'Owner',
-      is_system_owner: false,
-      status: 'Aktif'
-    },
-    {
-      id: '22222222-2222-2222-2222-222222222222',
-      nama: 'Siti Rahmawati',
-      email: 'admin@sewain.com',
-      password: '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', // password123
-      role: 'Admin',
-      is_system_owner: false,
-      status: 'Aktif'
-    },
-    {
-      id: '33333333-3333-3333-3333-333333333333',
-      nama: 'Dewa System Owner',
-      email: 'system@sewain.com',
-      password: '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', // password123
-      role: 'System Owner',
-      is_system_owner: true,
-      status: 'Aktif'
-    }
-  ];
-
-  for (const user of users) {
-    const { error } = await supabase.from('users').upsert(user);
-    if (error) {
-      console.error(`Error seeding ${user.email}:`, error.message);
-    } else {
-      console.log(`Successfully seeded: ${user.email}`);
-    }
-  }
-
-  console.log('\n--- SEEDING CORE BUSINESS DATA (Simplified SDK version) ---');
   // Seeding Unit
   const units = [
-    { id_unit: 'c1c1c1c1-0000-0000-0000-000000000001', kode_unit: 'RUKO-A01', kategori: 'Ruko', jenis_unit: 'Ruko 2 Lantai Utama', nomor_unit: 'A01', harga_sewa: 7500000.00, status_unit: 'Terisi' }
+    { id_unit: 'c1c1c1c1-0000-0000-0000-000000000001', kode_unit: 'A01', kategori: 'Ruko', jenis_unit: 'Type A', nomor_unit: 'A01', harga_sewa: 7500000.00, status_unit: 'Kosong' },
+    { id_unit: 'c1c1c1c1-0000-0000-0000-000000000002', kode_unit: 'A02', kategori: 'Ruko', jenis_unit: 'Type A', nomor_unit: 'A02', harga_sewa: 7500000.00, status_unit: 'Kosong' },
+    { id_unit: 'c1c1c1c1-0000-0000-0000-000000000003', kode_unit: 'A03', kategori: 'Ruko', jenis_unit: 'Type B', nomor_unit: 'A03', harga_sewa: 8000000.00, status_unit: 'Kosong' }
   ];
-  await supabase.from('unit').upsert(units);
+  
+  console.log('Seeding units...');
+  for (const u of units) {
+    const { error } = await supabase.from('unit').upsert(u);
+    console.log(`Unit ${u.kode_unit}: ${error ? error.message : 'OK'}`);
+  }
 
   // Seeding Penyewa
-  const tenants = [
-    { id_penyewa: 'bbbbbbbb-0000-0000-0000-000000000001', nama: 'Bambang Sudarsono', nik: '3171011203850001', email: 'bambang.kopi@gmail.com', whatsapp: '081234567890', kontak_darurat: '081298765432', jenis_usaha: 'Kuliner' }
+  const penyewas = [
+    { id_penyewa: 'bbbbbbbb-0000-0000-0000-000000000001', nama: 'Bambang Kopi', nik: '3201010101010001', whatsapp: '628123456789', kontak_darurat: 'Istri - 08123456788' },
+    { id_penyewa: 'bbbbbbbb-0000-0000-0000-000000000002', nama: 'Hj Salmah', nik: '3201010101010002', whatsapp: '628121122334', kontak_darurat: 'Anak - 08121122335' }
   ];
-  await supabase.from('penyewa').upsert(tenants);
+
+  console.log('Seeding penyewas...');
+  for (const p of penyewas) {
+    const { error } = await supabase.from('penyewa').upsert(p);
+    console.log(`Penyewa ${p.nama}: ${error ? error.message : 'OK'}`);
+  }
 
   // Seeding Kontrak
-  const contracts = [
-    { id_kontrak: 'aaaaaaaa-0000-0000-0000-000000000001', nomor_kontrak: 'KTR-2026-001', id_unit: 'c1c1c1c1-0000-0000-0000-000000000001', id_penyewa: 'bbbbbbbb-0000-0000-0000-000000000001', tanggal_masuk: '2026-01-01', tanggal_jatuh_tempo: 5, status_kontrak: 'Aktif' }
+  const kontraks = [
+    { id_kontrak: 'aaaaaaaa-0000-0000-0000-000000000001', nomor_kontrak: 'KTR/202601/001', id_unit: 'c1c1c1c1-0000-0000-0000-000000000001', id_penyewa: 'bbbbbbbb-0000-0000-0000-000000000001', tanggal_masuk: '2026-01-01', tanggal_jatuh_tempo: 5, status_kontrak: 'Aktif' }
   ];
-  await supabase.from('kontrak_sewa').upsert(contracts);
 
-  console.log('Seed completed via SDK.');
+  console.log('Seeding kontraks...');
+  for (const k of kontraks) {
+    const { error } = await supabase.from('kontrak_sewa').upsert(k);
+    console.log(`Kontrak ${k.nomor_kontrak}: ${error ? error.message : 'OK'}`);
+  }
 }
 
 run();

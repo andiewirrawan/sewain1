@@ -1,11 +1,11 @@
 -- =================================================================================
--- SEWAIN Application Database Schema (Unified & Fixed)
+-- SEWAIN Application Database Schema (Complete & Fixed)
 -- =================================================================================
 
 -- 0. INITIALIZATION
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Clean Slate
+-- Clean Slate (Careful order for CASCADE)
 DROP TABLE IF EXISTS log_wa_tagihan, riwayat_generate_tagihan, audit_log, alokasi_pembayaran, pembayaran, tagihan, promo_penyewa, promo, kontrak_sewa, penyewa, unit, users CASCADE;
 DROP TYPE IF EXISTS jenis_diskon_type CASCADE;
 DROP TYPE IF EXISTS promo_status_type CASCADE;
@@ -276,10 +276,10 @@ BEGIN
         v_total_tagihan := GREATEST(v_nominal_tagihan - v_nominal_diskon, 0);
 
         INSERT INTO tagihan (
-            id_kontrak, periode, jatuh_tempo, nominal_tagihan, 
+            id_tagihan, id_kontrak, periode, jatuh_tempo, nominal_tagihan, 
             id_promo, nominal_diskon, total_tagihan, status_tagihan
         ) VALUES (
-            v_kontrak.id_kontrak, p_periode, v_jatuh_tempo, v_nominal_tagihan,
+            gen_random_uuid(), v_kontrak.id_kontrak, p_periode, v_jatuh_tempo, v_nominal_tagihan,
             v_id_promo, v_nominal_diskon, v_total_tagihan, 'Belum Bayar'
         ) RETURNING id_tagihan INTO v_id_tagihan;
 
@@ -295,15 +295,15 @@ BEGIN
             v_alokasi_deposit := LEAST(v_saldo_penyewa, v_total_tagihan);
             
             INSERT INTO pembayaran (
-                id_kontrak, id_penyewa, periode, tanggal_bayar, 
+                id_pembayaran, id_kontrak, id_penyewa, periode, tanggal_bayar, 
                 nominal, status_pembayaran, metode_pembayaran, catatan
             ) VALUES (
-                v_kontrak.id_kontrak, v_kontrak.id_penyewa, p_periode, CURRENT_DATE,
+                gen_random_uuid(), v_kontrak.id_kontrak, v_kontrak.id_penyewa, p_periode, CURRENT_DATE,
                 v_alokasi_deposit, 'Lunas', 'Saldo Titipan', 'Alokasi otomatis dari deposit saat generate tagihan'
             ) RETURNING id_pembayaran INTO v_id_pembayaran;
 
-            INSERT INTO alokasi_pembayaran (id_pembayaran, id_tagihan, nominal_alokasi)
-            VALUES (v_id_pembayaran, v_id_tagihan, v_alokasi_deposit);
+            INSERT INTO alokasi_pembayaran (id_alokasi, id_pembayaran, id_tagihan, nominal_alokasi)
+            VALUES (gen_random_uuid(), v_id_pembayaran, v_id_tagihan, v_alokasi_deposit);
 
             UPDATE tagihan SET 
                 terbayar = v_alokasi_deposit,
@@ -356,10 +356,10 @@ BEGIN
     END IF;
 
     INSERT INTO pembayaran (
-        id_kontrak, id_penyewa, periode, tanggal_bayar, 
+        id_pembayaran, id_kontrak, id_penyewa, periode, tanggal_bayar, 
         nominal, status_pembayaran, metode_pembayaran, catatan
     ) VALUES (
-        p_id_kontrak, p_id_penyewa, p_periode, p_tanggal_bayar,
+        gen_random_uuid(), p_id_kontrak, p_id_penyewa, p_periode, p_tanggal_bayar,
         p_nominal, 'Lunas', p_metode_pembayaran, p_catatan
     ) RETURNING id_pembayaran INTO v_id_pembayaran;
 
@@ -378,8 +378,8 @@ BEGIN
         v_sisa_tagihan := v_tagihan.total_tagihan - v_tagihan.terbayar;
         v_alokasi := LEAST(v_pool, v_sisa_tagihan);
         IF v_alokasi > 0 THEN
-            INSERT INTO alokasi_pembayaran (id_pembayaran, id_tagihan, nominal_alokasi)
-            VALUES (v_id_pembayaran, v_tagihan.id_tagihan, v_alokasi);
+            INSERT INTO alokasi_pembayaran (id_alokasi, id_pembayaran, id_tagihan, nominal_alokasi)
+            VALUES (gen_random_uuid(), v_id_pembayaran, v_tagihan.id_tagihan, v_alokasi);
             UPDATE tagihan t SET 
                 terbayar = t.terbayar + v_alokasi,
                 status_tagihan = CASE 
@@ -415,6 +415,56 @@ EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object('success', false, 'message', SQLERRM);
 END;
 $$;
+
+-- Function: write_off_tagihan
+CREATE OR REPLACE FUNCTION write_off_tagihan(
+    p_id_tagihan UUID,
+    p_id_user UUID,
+    p_catatan TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    v_tagihan RECORD;
+    v_user_role TEXT;
+BEGIN
+    SELECT * INTO v_tagihan FROM tagihan WHERE id_tagihan = p_id_tagihan FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Tagihan tidak ditemukan');
+    END IF;
+
+    IF v_tagihan.status_tagihan = 'Lunas' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Tagihan sudah lunas tidak bisa di-write off');
+    END IF;
+
+    UPDATE tagihan SET 
+        status_tagihan = 'Write Off',
+        catatan = COALESCE(catatan, '') || ' [Write Off by ' || p_id_user || ': ' || p_catatan || ']',
+        updated_at = now()
+    WHERE id_tagihan = p_id_tagihan;
+
+    SELECT role INTO v_user_role FROM users WHERE id = p_id_user;
+    
+    INSERT INTO audit_log (id_user, role, aktivitas, nama_tabel, id_data, data_lama, data_baru)
+    VALUES (p_id_user, COALESCE(v_user_role, 'System'), 'Write Off Tagihan', 'tagihan', p_id_tagihan::TEXT, 
+            to_jsonb(v_tagihan), jsonb_build_object('status_tagihan', 'Write Off', 'catatan', p_catatan));
+
+    RETURN jsonb_build_object('success', true);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+-- Function: execute_sql (Internal Utility for Migrations)
+CREATE OR REPLACE FUNCTION execute_sql(sql TEXT)
+RETURNS VOID AS $$
+BEGIN
+  EXECUTE sql;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. ROW LEVEL SECURITY (RLS)
 BEGIN;
@@ -470,27 +520,9 @@ BEGIN
     END LOOP;
 END $$;
 
--- Drop existing policies
-DO $$ 
-DECLARE
-    t text;
-    p text;
-BEGIN
-    FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-    LOOP
-        FOR p IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = t
-        LOOP
-            EXECUTE format('DROP POLICY IF EXISTS %I ON %I', p, t);
-        END LOOP;
-    END LOOP;
-END $$;
-
 -- USERS Table Policies
 CREATE POLICY "Users SELECT" ON users FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Users ALL System Owner" ON users FOR ALL TO authenticated USING (public.is_system_owner());
-CREATE POLICY "Users INSERT Owner" ON users FOR INSERT TO authenticated WITH CHECK (public.is_owner() AND role != 'System Owner');
-CREATE POLICY "Users UPDATE Owner" ON users FOR UPDATE TO authenticated USING (public.is_owner() AND role != 'System Owner') WITH CHECK (role != 'System Owner');
-CREATE POLICY "Users DELETE Owner" ON users FOR DELETE TO authenticated USING (public.is_owner() AND role != 'System Owner');
 
 -- OPERATIONAL Tables Policies
 DO $$ 
@@ -506,20 +538,5 @@ END $$;
 -- TAGIHAN Table Policies
 CREATE POLICY "tagihan SELECT" ON tagihan FOR SELECT TO authenticated USING (public.has_operational_access());
 CREATE POLICY "tagihan ALL SO Owner" ON tagihan FOR ALL TO authenticated USING (public.is_system_owner() OR public.is_owner());
-CREATE POLICY "tagihan INSERT Kasir" ON tagihan FOR INSERT TO authenticated WITH CHECK (public.has_operational_access() AND status_tagihan != 'Write Off');
-CREATE POLICY "tagihan UPDATE Kasir" ON tagihan FOR UPDATE TO authenticated USING (public.has_operational_access()) WITH CHECK (status_tagihan != 'Write Off');
-
--- LOG Tables Policies
-DO $$ 
-DECLARE
-    t text;
-BEGIN
-    FOR t IN SELECT unnest(ARRAY['audit_log', 'log_wa_tagihan', 'riwayat_generate_tagihan'])
-    LOOP
-        EXECUTE format('CREATE POLICY "%s SELECT" ON %I FOR SELECT TO authenticated USING (public.has_operational_access())', t, t);
-        EXECUTE format('CREATE POLICY "%s INSERT" ON %I FOR INSERT TO authenticated WITH CHECK (public.has_operational_access())', t, t);
-        EXECUTE format('CREATE POLICY "%s ALL SO Owner" ON %I FOR ALL TO authenticated USING (public.is_system_owner() OR public.is_owner())', t, t);
-    END LOOP;
-END $$;
 
 COMMIT;
