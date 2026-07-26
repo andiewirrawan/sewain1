@@ -225,7 +225,8 @@ CREATE INDEX IF NOT EXISTS idx_wa_penyewa ON log_wa_tagihan(id_penyewa);
 CREATE OR REPLACE FUNCTION generate_tagihan_periode(p_periode TEXT, p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
+SET search_path = public
 AS $$
 DECLARE
     v_count INTEGER := 0;
@@ -353,6 +354,9 @@ EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object('success', false, 'message', SQLERRM);
 END;
 $$;
+REVOKE ALL ON FUNCTION generate_tagihan_periode(TEXT, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION generate_tagihan_periode(TEXT, UUID) TO authenticated;
+
 
 -- 6.2 Function: Proses Pembayaran FIFO (Transaction, Concurrency Safe)
 CREATE OR REPLACE FUNCTION proses_pembayaran_fifo(
@@ -367,7 +371,8 @@ CREATE OR REPLACE FUNCTION proses_pembayaran_fifo(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
+SET search_path = public
 AS $$
 DECLARE
     v_pool NUMERIC(15,2);
@@ -459,12 +464,16 @@ EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object('success', false, 'message', SQLERRM);
 END;
 $$;
+REVOKE ALL ON FUNCTION proses_pembayaran_fifo(UUID, UUID, TEXT, DATE, NUMERIC, TEXT, UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION proses_pembayaran_fifo(UUID, UUID, TEXT, DATE, NUMERIC, TEXT, UUID, TEXT) TO authenticated;
+
 
 -- 6.3 Function: Write Off Tagihan (Transactional)
 CREATE OR REPLACE FUNCTION write_off_tagihan(p_id_tagihan UUID, p_id_user UUID, p_catatan TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
+SET search_path = public
 AS $$
 DECLARE
     v_old_status status_tagihan_type;
@@ -493,6 +502,9 @@ EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object('success', false, 'message', SQLERRM);
 END;
 $$;
+REVOKE ALL ON FUNCTION write_off_tagihan(UUID, UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION write_off_tagihan(UUID, UUID, TEXT) TO authenticated;
+
 
 -- =================================================================================
 -- 7. TRIGGERS (Updated At)
