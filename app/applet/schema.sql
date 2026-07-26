@@ -283,7 +283,7 @@ BEGIN
             id_promo, nominal_diskon, total_tagihan, status_tagihan
         ) VALUES (
             gen_random_uuid(), v_kontrak.id_kontrak, p_periode, v_jatuh_tempo, v_nominal_tagihan,
-            v_id_promo, v_nominal_diskon, v_total_tagihan, 'Belum Bayar'
+            v_id_promo, v_nominal_diskon, v_total_tagihan, 'Belum Bayar'::status_tagihan_type
         ) RETURNING id_tagihan INTO v_id_tagihan;
 
         v_count := v_count + 1;
@@ -310,7 +310,7 @@ BEGIN
 
             UPDATE tagihan SET 
                 terbayar = v_alokasi_deposit,
-                status_tagihan = CASE WHEN v_alokasi_deposit >= v_total_tagihan THEN 'Lunas' ELSE 'Sebagian' END
+                status_tagihan = CASE WHEN v_alokasi_deposit >= v_total_tagihan THEN 'Lunas'::status_tagihan_type ELSE 'Sebagian'::status_tagihan_type END
             WHERE id_tagihan = v_id_tagihan;
 
             UPDATE penyewa p SET saldo_titipan = p.saldo_titipan - v_alokasi_deposit WHERE p.id_penyewa = v_kontrak.id_penyewa;
@@ -444,7 +444,7 @@ BEGIN
     END IF;
 
     UPDATE tagihan SET 
-        status_tagihan = 'Write Off',
+        status_tagihan = 'Write Off'::status_tagihan_type,
         catatan = COALESCE(catatan, '') || ' [Write Off by ' || p_id_user || ': ' || p_catatan || ']',
         updated_at = now()
     WHERE id_tagihan = p_id_tagihan;
