@@ -6,8 +6,11 @@ import { generateToken } from '@/lib/auth';
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
+    console.log('--- LOGIN ATTEMPT ---');
+    console.log('Email:', email);
 
     if (!email || !password) {
+      console.log('Failure: Missing email or password');
       return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
     }
 
@@ -19,23 +22,39 @@ export async function POST(req: NextRequest) {
       .eq('status', 'Aktif')
       .single();
 
-    if (error || !user) {
+    if (error) {
+      console.log('Supabase error searching user:', error.message);
+    }
+
+    if (!user) {
+      console.log('Failure: User not found or inactive');
       return NextResponse.json({ message: 'User tidak ditemukan atau tidak aktif' }, { status: 401 });
     }
 
+    console.log('User found:', user.email);
+    console.log('User status:', user.status);
+    console.log('User role:', user.role);
+
     const dbPassword = user.password || user.password_hash;
+    console.log('DB Password Hash exists:', !!dbPassword);
+
     if (!dbPassword) {
+      console.log('Failure: Password column missing or empty in database');
       return NextResponse.json({ message: 'Password column missing or empty in database' }, { status: 500 });
     }
 
     // Cek password
     const isPasswordValid = await bcrypt.compare(password, dbPassword);
+    console.log('bcrypt.compare result:', isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log('Failure: Incorrect password');
       return NextResponse.json({ message: 'Password salah' }, { status: 401 });
     }
 
     // Generate JWT
     const userId = user.id || user.id_user;
+    console.log('User ID for JWT:', userId);
     
     const token = await generateToken({
       id: userId,
@@ -45,6 +64,7 @@ export async function POST(req: NextRequest) {
       is_system_owner: user.role === 'System Owner' || user.is_system_owner === true,
     });
 
+    console.log('JWT Token generated successfully');
     return NextResponse.json({
       token,
       user: {

@@ -7,10 +7,10 @@ BEGIN;
 -- 1. USERS (Password: password123)
 -- Hash generated via bcrypt
 INSERT INTO users (id, nama, email, password, role, is_system_owner, status) VALUES
-('11111111-1111-1111-1111-111111111111', 'Super Admin', 'system@sewain.com', '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', 'System Owner', true, 'Aktif'),
-('22222222-2222-2222-2222-222222222222', 'Andie Owner', 'owner@sewain.com', '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', 'Owner', false, 'Aktif'),
-('33333333-3333-3333-3333-333333333333', 'Budi Admin', 'admin@sewain.com', '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', 'Admin', false, 'Aktif'),
-('44444444-4444-4444-4444-444444444444', 'Siti Kasir', 'kasir@sewain.com', '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', 'Kasir', false, 'Aktif');
+('11111111-1111-1111-1111-111111111111', 'Super Admin', 'system@sewain.com', '$2b$10$7pkQ9RCVXhYf3ZlGYpP7jeMPe3WdZPkascZYqR/lOh/IqJ0NxaZcC', 'System Owner', true, 'Aktif'),
+('22222222-2222-2222-2222-222222222222', 'Andie Owner', 'owner@sewain.com', '$2b$10$7pkQ9RCVXhYf3ZlGYpP7jeMPe3WdZPkascZYqR/lOh/IqJ0NxaZcC', 'Owner', false, 'Aktif'),
+('33333333-3333-3333-3333-333333333333', 'Budi Admin', 'admin@sewain.com', '$2b$10$7pkQ9RCVXhYf3ZlGYpP7jeMPe3WdZPkascZYqR/lOh/IqJ0NxaZcC', 'Admin', false, 'Aktif'),
+('44444444-4444-4444-4444-444444444444', 'Siti Kasir', 'kasir@sewain.com', '$2b$10$7pkQ9RCVXhYf3ZlGYpP7jeMPe3WdZPkascZYqR/lOh/IqJ0NxaZcC', 'Kasir', false, 'Aktif');
 
 -- 2. UNIT PROPERTI
 INSERT INTO unit (id_unit, kode_unit, kategori, jenis_unit, nomor_unit, harga_sewa, status_unit) VALUES
