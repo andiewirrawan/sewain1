@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     const insertData = { 
       nama, 
       email, 
-      password_hash: hashedPassword, 
+      password: hashedPassword, 
       role, 
       status: 'Aktif',
       is_system_owner: false

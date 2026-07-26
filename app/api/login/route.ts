@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       nama: user.nama,
       email: user.email,
       role: user.role,
-      is_system_owner: user.is_system_owner || false,
+      is_system_owner: user.role === 'System Owner' || user.is_system_owner === true,
     });
 
     return NextResponse.json({
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         id: userId,
         nama: user.nama,
         role: user.role,
-        is_system_owner: user.is_system_owner || false,
+        is_system_owner: user.role === 'System Owner' || user.is_system_owner === true,
       }
     });
   } catch (error) {
