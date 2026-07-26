@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import LayoutWrapper from '@/components/LayoutWrapper';
 import { 
   ArrowLeft, 
   RefreshCw, 
   Calendar,
   AlertTriangle,
   CheckCircle2,
-  Info
+  Info,
+  Clock
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
@@ -130,6 +130,7 @@ export default function GenerateTagihanPage() {
                   <select 
                     id="year-select"
                     required
+                    defaultValue={currentYear}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                     onChange={(e) => {
                       const year = e.target.value;
@@ -138,7 +139,7 @@ export default function GenerateTagihanPage() {
                     }}
                   >
                     {years.map(y => (
-                      <option key={y} value={y} selected={y === currentYear}>{y}</option>
+                      <option key={y} value={y}>{y}</option>
                     ))}
                   </select>
                 </div>
