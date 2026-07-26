@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, 
   RefreshCw, 
-  Calendar, 
-  AlertTriangle, 
+  Calendar,
+  AlertTriangle,
   CheckCircle2,
   Info,
   Clock
@@ -16,30 +16,27 @@ import { apiFetch } from '@/lib/api';
 export default function GenerateTagihanPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState('');
   
   const currentYear = new Date().getFullYear();
-  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-  
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
+  
   const [jatuhTempo, setJatuhTempo] = useState('');
+  const [result, setResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
 
   const months = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
 
-  const years = [currentYear - 1, currentYear, currentYear + 1];
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 1 + i);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedMonth || !selectedYear) {
+    if (!selectedMonth) {
       alert('Pilih bulan dan tahun terlebih dahulu.');
       return;
     }
-    
     if (!jatuhTempo) {
       alert('Tentukan tanggal jatuh tempo.');
       return;
@@ -49,21 +46,20 @@ export default function GenerateTagihanPage() {
 
     try {
       setLoading(true);
+      setResult(null);
       const res = await apiFetch('/api/tagihan/generate', {
         method: 'POST',
-        body: JSON.stringify({ periode, jatuhTempo })
+        body: JSON.stringify({ periode, jatuh_tempo: jatuhTempo })
       });
-
       const data = await res.json();
-
+      
       if (res.ok) {
         setResult({ success: true, message: data.message, count: data.count });
       } else {
-        setResult({ success: false, message: data.message || 'Terjadi kesalahan saat generate tagihan' });
+        setResult({ success: false, message: data.message || 'Terjadi kesalahan' });
       }
     } catch (err: any) {
-      console.error('Generate error:', err);
-      setResult({ success: false, message: 'Terjadi kesalahan sistem. Silakan coba lagi.' });
+      setResult({ success: false, message: 'Terjadi kesalahan sistem' });
     } finally {
       setLoading(false);
     }
@@ -94,9 +90,6 @@ export default function GenerateTagihanPage() {
               <div>
                 <h3 className="text-xl font-bold mb-1">{result.success ? 'Berhasil!' : 'Gagal Generate'}</h3>
                 <p className="font-medium opacity-90">{result.message}</p>
-                {result.count !== undefined && (
-                  <p className="text-sm mt-1 font-bold">Total Tagihan Dibuat: {result.count}</p>
-                )}
               </div>
               {result.success ? (
                 <button 
@@ -124,9 +117,9 @@ export default function GenerateTagihanPage() {
                   </label>
                   <select 
                     required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                   >
                     <option value="">Pilih Bulan</option>
                     {months.map((m, i) => (
@@ -138,9 +131,9 @@ export default function GenerateTagihanPage() {
                   <label className="text-sm font-bold text-slate-700">Tahun</label>
                   <select 
                     required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                   >
                     {years.map(y => (
                       <option key={y} value={String(y)}>{y}</option>
