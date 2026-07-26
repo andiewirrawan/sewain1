@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, 
   RefreshCw, 
-  Calendar,
-  AlertTriangle,
+  Calendar, 
+  AlertTriangle, 
   CheckCircle2,
   Info,
   Clock
@@ -16,45 +16,54 @@ import { apiFetch } from '@/lib/api';
 export default function GenerateTagihanPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [periode, setPeriode] = useState('');
-  const [jatuhTempo, setJatuhTempo] = useState('');
   const [result, setResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
+  
+  const currentYear = new Date().getFullYear();
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+  
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
+  const [jatuhTempo, setJatuhTempo] = useState('');
 
   const months = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 1 + i);
+  const years = [currentYear - 1, currentYear, currentYear + 1];
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!periode) {
+    
+    if (!selectedMonth || !selectedYear) {
       alert('Pilih bulan dan tahun terlebih dahulu.');
       return;
     }
+    
     if (!jatuhTempo) {
       alert('Tentukan tanggal jatuh tempo.');
       return;
     }
 
+    const periode = `${selectedMonth}-${selectedYear}`;
+
     try {
       setLoading(true);
-      setResult(null);
       const res = await apiFetch('/api/tagihan/generate', {
         method: 'POST',
-        body: JSON.stringify({ periode, jatuh_tempo: jatuhTempo })
+        body: JSON.stringify({ periode, jatuhTempo })
       });
+
       const data = await res.json();
-      
+
       if (res.ok) {
         setResult({ success: true, message: data.message, count: data.count });
       } else {
-        setResult({ success: false, message: data.message || 'Terjadi kesalahan' });
+        setResult({ success: false, message: data.message || 'Terjadi kesalahan saat generate tagihan' });
       }
     } catch (err: any) {
-      setResult({ success: false, message: 'Terjadi kesalahan sistem' });
+      console.error('Generate error:', err);
+      setResult({ success: false, message: 'Terjadi kesalahan sistem. Silakan coba lagi.' });
     } finally {
       setLoading(false);
     }
@@ -85,6 +94,9 @@ export default function GenerateTagihanPage() {
               <div>
                 <h3 className="text-xl font-bold mb-1">{result.success ? 'Berhasil!' : 'Gagal Generate'}</h3>
                 <p className="font-medium opacity-90">{result.message}</p>
+                {result.count !== undefined && (
+                  <p className="text-sm mt-1 font-bold">Total Tagihan Dibuat: {result.count}</p>
+                )}
               </div>
               {result.success ? (
                 <button 
@@ -112,12 +124,9 @@ export default function GenerateTagihanPage() {
                   </label>
                   <select 
                     required
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
-                    onChange={(e) => {
-                      const month = e.target.value;
-                      const year = (document.getElementById('year-select') as HTMLSelectElement)?.value || String(currentYear);
-                      if (month) setPeriode(`${month}-${year}`);
-                    }}
                   >
                     <option value="">Pilih Bulan</option>
                     {months.map((m, i) => (
@@ -128,18 +137,13 @@ export default function GenerateTagihanPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700">Tahun</label>
                   <select 
-                    id="year-select"
                     required
-                    defaultValue={currentYear}
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
-                    onChange={(e) => {
-                      const year = e.target.value;
-                      const month = (document.querySelector('select[required]') as HTMLSelectElement)?.value;
-                      if (month) setPeriode(`${month}-${year}`);
-                    }}
                   >
                     {years.map(y => (
-                      <option key={y} value={y}>{y}</option>
+                      <option key={y} value={String(y)}>{y}</option>
                     ))}
                   </select>
                 </div>
