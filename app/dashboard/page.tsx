@@ -86,7 +86,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-4 uppercase text-sm tracking-wider text-rose-600">Aging Piutang (Hari)</h3>
+          <h3 className="font-bold text-slate-800 mb-4 uppercase text-sm tracking-wider">Aging Piutang (Hari Keterlambatan)</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={agingData}>
@@ -94,12 +94,26 @@ export default function DashboardPage() {
                 <YAxis />
                 <Tooltip formatter={(value: any) => formatRupiah(value)} />
                 <Bar dataKey="nominal" fill="#e11d48" name="Piutang">
-                  {agingData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? '#fb7185' : index === 1 ? '#f43f5e' : index === 2 ? '#e11d48' : '#be123c'} />
-                  ))}
+                  {agingData.map((entry, index) => {
+                    const colors = {
+                      "Lancar": "#10b981",    // Emerald-500
+                      "1-7 Hari": "#f59e0b",  // Amber-500
+                      "8-30 Hari": "#f43f5e", // Rose-500
+                      ">30 Hari": "#be123c"   // Rose-700
+                    };
+                    // @ts-ignore
+                    const fill = colors[entry.name] || '#94a3b8';
+                    return <Cell key={`cell-${index}`} fill={fill} />;
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-4 text-[10px] uppercase font-bold text-slate-400">
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-500"></div> Lancar</div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500"></div> 1-7 Hari</div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-rose-500"></div> 8-30 Hari</div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-rose-700"></div> {">"}30 Hari</div>
           </div>
         </div>
       </div>

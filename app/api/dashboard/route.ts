@@ -63,33 +63,45 @@ export async function GET(req: NextRequest) {
     const pendapatan_tahun_ini = payYear?.reduce((sum, p) => sum + Number(p.nominal || 0), 0) || 0;
 
     // 4. Tunggakan (Berdasarkan Tabel Tagihan)
+    // Piutang dihitung dari tagihan yang statusnya BUKAN Lunas, Dibatalkan, atau Write Off
     const { data: allUnpaid, error: errTunggakan } = await supabaseAdmin
       .from('tagihan')
-      .select('total_tagihan, terbayar, jatuh_tempo')
-      .neq('status_tagihan', 'Lunas');
+      .select('total_tagihan, terbayar, jatuh_tempo, status_tagihan')
+      .not('status_tagihan', 'in', '("Lunas","Dibatalkan","Write Off")');
 
     if (errTunggakan) throw errTunggakan;
 
     const total_piutang = allUnpaid?.reduce((sum, t) => sum + (Number(t.total_tagihan) - Number(t.terbayar)), 0) || 0;
     const jumlah_tagihan_tertunggak = allUnpaid?.length || 0;
 
-    // Aging Piutang
+    // Aging Piutang (Keterlambatan sejak Jatuh Tempo)
     const aging_piutang = {
-      "0-30": 0,
-      "31-60": 0,
-      "61-90": 0,
-      ">90": 0
+      "Lancar": 0,    // Belum jatuh tempo
+      "1-7 Hari": 0,
+      "8-30 Hari": 0,
+      ">30 Hari": 0
     };
 
     allUnpaid?.forEach(t => {
-      const diffTime = Math.abs(now.getTime() - new Date(t.jatuh_tempo).getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const value = Number(t.total_tagihan) - Number(t.terbayar);
+      const jt = new Date(t.jatuh_tempo);
+      
+      // Reset jam ke 0 untuk perbandingan tanggal yang akurat
+      const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const d2 = new Date(jt.getFullYear(), jt.getMonth(), jt.getDate());
+      
+      const diffTime = d1.getTime() - d2.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays <= 30) aging_piutang["0-30"] += value;
-      else if (diffDays <= 60) aging_piutang["31-60"] += value;
-      else if (diffDays <= 90) aging_piutang["61-90"] += value;
-      else aging_piutang[">90"] += value;
+      if (diffDays <= 0) {
+        aging_piutang["Lancar"] += value;
+      } else if (diffDays <= 7) {
+        aging_piutang["1-7 Hari"] += value;
+      } else if (diffDays <= 30) {
+        aging_piutang["8-30 Hari"] += value;
+      } else {
+        aging_piutang[">30 Hari"] += value;
+      }
     });
 
     // 5. Belum Bayar Periode Ini
