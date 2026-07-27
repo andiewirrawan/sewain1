@@ -65,7 +65,9 @@ export async function GET(
       data = p;
       totalCount = count || 0;
     } else if (jenis === 'tunggakan') {
-      let q = supabase.from('tagihan').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit)), jatuh_tempo, periode, total_tagihan, terbayar, status_tagihan', { count: 'exact' }).neq('status_tagihan', 'Lunas');
+      let q = supabase.from('tagihan').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit)), jatuh_tempo, periode, total_tagihan, terbayar, status_tagihan', { count: 'exact' })
+        .not('status_tagihan', 'in', '("Lunas","Dibatalkan","Write Off")');
+      
       if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
       else if (tahun) q = q.ilike('periode', `%-${tahun}`);
 
