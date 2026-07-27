@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin, Ticket } from 'lucide-react';
+import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin, Ticket, Wallet } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -115,6 +115,14 @@ export default function DetailPenyewaPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Jenis Usaha</p>
                   <p className="text-sm text-gray-900">{penyewa.jenis_usaha || '-'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start">
+                <Wallet className="h-5 w-5 text-blue-400 mr-3 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Saldo Titipan</p>
+                  <p className="text-sm font-bold text-blue-700">{formatRupiah(penyewa.saldo_titipan || 0)}</p>
                 </div>
               </div>
             </div>
