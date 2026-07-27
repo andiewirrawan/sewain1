@@ -46,7 +46,7 @@ Halaman utama yang memberikan gambaran cepat kondisi bisnis Anda.
 Tempat mengelola data unit properti yang akan disewakan.
 
 - **Fungsi Menu**: Menambah, mengubah, dan melihat daftar unit properti.
-- **Siapa yang boleh akses**: Owner, Admin, Kasir.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Langkah Penggunaan**:
   1. Klik menu **Master Unit**.
   2. Klik **Tambah Unit** untuk mendaftarkan unit baru.
@@ -62,7 +62,7 @@ Tempat mengelola data unit properti yang akan disewakan.
 Tempat mengelola database penyewa.
 
 - **Fungsi Menu**: Mencatat identitas lengkap penyewa.
-- **Siapa yang boleh akses**: Owner, Admin, Kasir.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Langkah Penggunaan**:
   1. Klik menu **Master Penyewa**.
   2. Klik **Tambah Penyewa**.
@@ -93,7 +93,7 @@ Fitur untuk mengatur program diskon.
 Jantung dari aplikasi, menghubungkan Penyewa dengan Unit.
 
 - **Fungsi Menu**: Membuat perjanjian sewa resmi dalam sistem.
-- **Siapa yang boleh akses**: Owner, Admin, Kasir.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Langkah Penggunaan**:
   1. Klik menu **Kontrak**.
   2. Klik **Buat Kontrak**.
@@ -108,7 +108,7 @@ Jantung dari aplikasi, menghubungkan Penyewa dengan Unit.
 Manajemen penagihan bulanan kepada penyewa.
 
 - **Fungsi Menu**: Membuat dan memantau status tagihan sewa.
-- **Siapa yang boleh akses**: Owner, Admin, Kasir.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Proses Generate Piutang**:
   1. Klik tombol **Generate Tagihan**.
   2. Pilih **Bulan** dan **Tahun** periode tagihan.
@@ -122,7 +122,7 @@ Manajemen penagihan bulanan kepada penyewa.
 Proses pelunasan tagihan oleh penyewa.
 
 - **Fungsi Menu**: Mencatat uang masuk dan mengalokasikannya ke tagihan.
-- **Siapa yang boleh akses**: Owner, Admin, Kasir.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Cara Kerja FIFO**:
   - Aplikasi akan mencari tagihan tertua milik penyewa tersebut.
   - Uang pembayaran akan dialokasikan untuk melunasi tagihan tertua terlebih dahulu.
@@ -140,7 +140,7 @@ Proses pelunasan tagihan oleh penyewa.
 Analisis mendalam mengenai data operasional.
 
 - **Fungsi Menu**: Melihat dan mengekspor data laporan ke format Excel.
-- **Siapa yang boleh akses**: Owner, Admin, Kasir.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Jenis Laporan Tersedia**:
   - **Occupancy**: Keterisian unit.
   - **Pendapatan**: Uang masuk berdasarkan periode bayar.

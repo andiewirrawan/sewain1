@@ -12,27 +12,55 @@ import {
   X,
   Settings,
   PieChart,
-  Receipt
+  Receipt,
+  Tag
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const menuItems = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Master Unit', href: '/unit', icon: Building2 },
-  { name: 'Master Penyewa', href: '/penyewa', icon: Users },
-  { name: 'Kontrak', href: '/kontrak', icon: FileText },
-  { name: 'Tagihan', href: '/tagihan', icon: Receipt },
-  { name: 'Pembayaran', href: '/pembayaran', icon: CreditCard },
-  { name: 'Laporan', href: '/laporan', icon: PieChart },
+const menuGroups = [
+  {
+    title: 'Dashboard',
+    items: [
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    ]
+  },
+  {
+    title: 'Master',
+    items: [
+      { name: 'Daftar Unit', href: '/unit', icon: Building2 },
+      { name: 'Penyewa', href: '/penyewa', icon: Users },
+      { name: 'Kontrak', href: '/kontrak', icon: FileText },
+      { name: 'Promo', href: '/pengaturan/promo', icon: Tag, roles: ['Owner'] },
+    ]
+  },
+  {
+    title: 'Keuangan',
+    items: [
+      { name: 'Piutang', href: '/tagihan', icon: Receipt },
+      { name: 'Pembayaran', href: '/pembayaran', icon: CreditCard },
+    ]
+  },
+  {
+    title: 'Laporan',
+    items: [
+      { name: 'Laporan', href: '/laporan', icon: PieChart },
+    ]
+  },
+  {
+    title: 'Pengaturan',
+    items: [
+      { name: 'Pengaturan', href: '/pengaturan', icon: Settings, roles: ['Owner'] },
+    ]
+  }
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(true);
-  const [user, setUser] = React.useState<{ nama: string; role: string } | null>(() => {
+  const [user, setUser] = React.useState<{ nama: string; role: string; is_system_owner: boolean } | null>(() => {
     if (typeof window !== 'undefined') {
       try {
         const storedUser = localStorage.getItem('user');
@@ -89,46 +117,49 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+        <nav className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
+          {menuGroups.map((group) => {
+            // Filter items in group based on role
+            const visibleItems = group.items.filter(item => {
+              if (item.roles && !item.roles.includes(user?.role || '') && !user?.is_system_owner) {
+                return false;
+              }
+              return true;
+            });
+
+            if (visibleItems.length === 0) return null;
+
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
-                  isActive 
-                    ? "bg-slate-800/50 text-blue-400" 
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/30"
+              <div key={group.title} className="space-y-1">
+                {isOpen && (
+                  <h3 className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    {group.title}
+                  </h3>
                 )}
-              >
-                <Icon size={18} className={cn(isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
-                <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>
-                  {item.name}
-                </span>
-              </Link>
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
+                        isActive 
+                          ? "bg-slate-800 text-blue-400" 
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/30"
+                      )}
+                    >
+                      <Icon size={18} className={cn(isActive ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
+                      <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>
+                        {item.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
-
-          {/* Menu Pengaturan khusus Owner */}
-          {(user?.role === 'Owner' || user?.role === 'System Owner') && (
-            <Link
-              href="/pengaturan"
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
-                pathname === '/pengaturan' 
-                  ? "bg-slate-800/50 text-blue-400" 
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/30"
-              )}
-            >
-              <Settings size={18} className={cn(pathname === '/pengaturan' ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
-              <span className={cn("text-sm font-medium", !isOpen && "lg:hidden")}>
-                Pengaturan
-              </span>
-            </Link>
-          )}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
