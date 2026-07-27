@@ -31,7 +31,7 @@ Akses aplikasi melalui halaman login yang aman.
 Halaman utama yang memberikan gambaran cepat kondisi bisnis Anda.
 
 - **Fungsi Menu**: Melihat ringkasan data operasional dan keuangan secara real-time.
-- **Siapa yang boleh akses**: Owner, Kasir, Admin.
+- **Siapa yang boleh akses**: Owner, Admin.
 - **Informasi yang Ditampilkan**:
   - **Statistik Utama**: Total Unit, Unit Terisi, Unit Kosong, Penyewa Aktif, dan Kontrak Aktif.
   - **Keuangan**: Total Piutang (Tagihan yang belum lunas), Pendapatan Bulan Ini, dan Pendapatan Tahun Ini.
@@ -158,7 +158,7 @@ Konfigurasi sistem tingkat lanjut.
 - **Fungsi Menu**: Mengelola tarif dasar, hak akses pengguna, dan keamanan database.
 - **Audit Log**: Melihat riwayat aktivitas setiap pengguna (siapa mengubah apa, kapan, dan data apa yang berubah).
 - **Tarif Sewa**: Mengubah harga dasar sewa unit tanpa harus masuk ke detail unit satu per satu.
-- **Kelola Pengguna**: Menambah akun Kasir atau Admin baru, serta mengatur status aktif/nonaktif akun.
+- **Kelola Pengguna**: Menambah akun Admin baru, serta mengatur status aktif/nonaktif akun.
 
 ---
 
@@ -177,7 +177,7 @@ Fitur pemeliharaan data.
 A: Sisa uang tersebut akan disimpan di **Saldo Titipan**. Saat tagihan bulan depan dibuat (Generate), sistem akan otomatis memotong saldo titipan tersebut untuk membayar tagihan baru.
 
 **Q: Apa yang terjadi jika saya salah input nominal pembayaran?**
-A: Saat ini sistem tidak mendukung pembatalan pembayaran secara langsung oleh Kasir. Harap hubungi Owner untuk melakukan penyesuaian data atau melakukan reset data jika diperlukan.
+A: Harap hubungi Owner untuk melakukan penyesuaian data atau melakukan reset data jika diperlukan.
 
 **Q: Apakah satu penyewa bisa memiliki lebih dari satu unit?**
 A: Bisa. Anda cukup membuat Kontrak baru untuk unit berbeda dengan memilih penyewa yang sama.
@@ -202,4 +202,4 @@ A: Bisa. Anda cukup membuat Kontrak baru untuk unit berbeda dengan memilih penye
 - **Generate**: Proses pembuatan data secara otomatis oleh sistem.
 - **Audit Log**: Catatan jejak digital setiap aktivitas pengguna di aplikasi.
 - **Owner**: Level akses tertinggi (Pemilik) yang memiliki kontrol penuh atas sistem.
-- **Kasir**: Level akses operasional yang fokus pada input pembayaran dan Master data harian.
+- **Admin**: Level akses operasional yang memiliki izin terbatas dibanding Owner.

@@ -24,7 +24,7 @@ CREATE TABLE users (
     nama TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    role TEXT CHECK (role IN ('Owner', 'Admin', 'Kasir', 'System Owner')) NOT NULL,
+    role TEXT CHECK (role IN ('Owner', 'Admin', 'System Owner')) NOT NULL,
     is_system_owner BOOLEAN DEFAULT false,
     status TEXT DEFAULT 'Aktif',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -188,6 +188,22 @@ CREATE INDEX idx_pembayaran_penyewa ON pembayaran(id_penyewa);
 CREATE INDEX idx_pembayaran_tanggal ON pembayaran(tanggal_bayar);
 CREATE INDEX idx_alokasi_pembayaran ON alokasi_pembayaran(id_pembayaran);
 CREATE INDEX idx_alokasi_tagihan ON alokasi_pembayaran(id_tagihan);
+
+CREATE TABLE IF NOT EXISTS pengaturan_aplikasi (
+    id INT PRIMARY KEY DEFAULT 1,
+    nama_usaha TEXT,
+    whatsapp_admin TEXT,
+    mata_uang TEXT DEFAULT 'IDR',
+    zona_waktu TEXT DEFAULT 'Asia/Jakarta',
+    versi_aplikasi TEXT,
+    versi_schema TEXT,
+    build_terakhir TIMESTAMPTZ,
+    CONSTRAINT single_row CHECK (id = 1)
+);
+
+INSERT INTO pengaturan_aplikasi (id, nama_usaha, versi_aplikasi, versi_schema)
+VALUES (1, 'Pujasera & Kos Pelangi', '1.0.0', 'v7')
+ON CONFLICT (id) DO NOTHING;
 
 -- 7. FUNCTIONS
 
@@ -452,7 +468,7 @@ LANGUAGE sql
 SECURITY INVOKER
 SET search_path = public
 AS $$
-  SELECT public.get_auth_user_role() IN ('System Owner', 'Owner', 'Kasir', 'Admin');
+  SELECT public.get_auth_user_role() IN ('System Owner', 'Owner', 'Admin');
 $$;
 
 DO $$ 

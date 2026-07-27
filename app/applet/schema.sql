@@ -24,7 +24,7 @@ CREATE TABLE users (
     nama TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    role TEXT CHECK (role IN ('Owner', 'Admin', 'Kasir', 'System Owner')) NOT NULL,
+    role TEXT CHECK (role IN ('Owner', 'Admin', 'System Owner')) NOT NULL,
     is_system_owner BOOLEAN DEFAULT false,
     status TEXT DEFAULT 'Aktif',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -516,7 +516,7 @@ LANGUAGE sql
 SECURITY INVOKER
 SET search_path = public
 AS $$
-  SELECT public.get_auth_user_role() IN ('System Owner', 'Owner', 'Kasir', 'Admin');
+  SELECT public.get_auth_user_role() IN ('System Owner', 'Owner', 'Admin');
 $$;
 
 DO $$ 
