@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   Clock,
   Trash2,
-  Ticket
+  Ticket,
+  History
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
@@ -133,6 +134,8 @@ export default function PembayaranPage() {
     }
   };
 
+  const isOwner = userRole === 'Owner' || userRole === 'System Owner';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -140,14 +143,26 @@ export default function PembayaranPage() {
           <h1 className="text-2xl font-bold text-gray-900">Data Pembayaran</h1>
           <p className="text-sm text-gray-500 mt-1">Monitoring tagihan dan pembayaran sewa</p>
         </div>
-        <Link
-          href="/pembayaran/tambah"
-          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Input Pembayaran
-        </Link>
+        <div className="flex items-center gap-3">
+          {isOwner && (
+            <Link
+              href="/pembayaran/alokasi"
+              className="inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50"
+            >
+              <History className="h-4 w-4 mr-2 text-slate-500" />
+              Riwayat Alokasi
+            </Link>
+          )}
+          <Link
+            href="/pembayaran/tambah"
+            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Input Pembayaran
+          </Link>
+        </div>
       </div>
+
 
       <div className="bg-white shadow rounded-lg border border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
