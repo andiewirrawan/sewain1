@@ -17,7 +17,11 @@ import {
   Power,
   PowerOff,
   X,
-  Ticket
+  Ticket,
+  Settings,
+  Globe,
+  Smartphone,
+  Info
 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 
@@ -60,6 +64,16 @@ export default function PengaturanPage() {
 
   // Form states
   const [newUser, setNewUser] = useState({ nama: '', email: '', password: '', role: 'Admin' });
+
+  // App Settings states
+  const [appSettings, setAppSettings] = useState<any>(null);
+  const [editSettings, setEditSettings] = useState<any>({
+    nama_usaha: '',
+    whatsapp_admin: '',
+    mata_uang: 'IDR',
+    zona_waktu: 'Asia/Jakarta'
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -124,6 +138,23 @@ export default function PengaturanPage() {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await apiFetch('/api/pengaturan/aplikasi');
+      if (!res.ok) throw new Error('Gagal mengambil pengaturan aplikasi');
+      const data = await res.json();
+      setAppSettings(data);
+      setEditSettings({
+        nama_usaha: data.nama_usaha || 'SEWAIN',
+        whatsapp_admin: data.whatsapp_admin || '',
+        mata_uang: data.mata_uang || 'IDR',
+        zona_waktu: data.zona_waktu || 'Asia/Jakarta'
+      });
+    } catch (err: any) {
+      console.error('Gagal mengambil pengaturan:', err);
+    }
+  };
+
   const fetchAllData = async () => {
     setLoading(true);
     setError(null);
@@ -131,7 +162,8 @@ export default function PengaturanPage() {
       await Promise.all([
         fetchUnits(),
         fetchUsers(),
-        fetchLogs()
+        fetchLogs(),
+        fetchSettings()
       ]);
     } catch (err) {
       console.error('Error fetching all data:', err);
@@ -341,6 +373,28 @@ export default function PengaturanPage() {
     }
   };
 
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    try {
+      const res = await apiFetch('/api/pengaturan/aplikasi', {
+        method: 'PUT',
+        body: JSON.stringify(editSettings)
+      });
+      if (res.ok) {
+        alert('Pengaturan umum berhasil disimpan');
+        fetchSettings();
+      } else {
+        const errData = await res.json();
+        alert(`Gagal menyimpan pengaturan: ${errData.message}`);
+      }
+    } catch (err) {
+      alert('Gagal menyimpan pengaturan');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   if (!user || user.role !== 'Owner' && user.role !== 'System Owner') {
     return <div className="p-8 text-center text-slate-500">Memverifikasi akses...</div>;
   }
@@ -374,6 +428,112 @@ export default function PengaturanPage() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Pengaturan Sistem</h1>
           <p className="text-slate-500 mt-1">Kelola tarif, pengguna, dan pemeliharaan database.</p>
         </div>
+      </div>
+
+      {/* Profil Aplikasi & Pengaturan Umum */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Profil Aplikasi */}
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div className="p-2 bg-slate-100 text-slate-600 rounded-lg">
+              <Info size={20} />
+            </div>
+            <h2 className="font-bold text-slate-800">Profil Aplikasi</h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Nama Usaha</p>
+                <p className="text-sm font-bold text-slate-900">{appSettings?.nama_usaha || 'SEWAIN'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Versi Aplikasi</p>
+                <p className="text-sm font-bold text-slate-900">{appSettings?.versi_aplikasi || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Versi Schema</p>
+                <p className="text-sm font-bold text-slate-900">{appSettings?.versi_schema || '-'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Build Terakhir</p>
+                <p className="text-sm font-bold text-slate-900">
+                  {appSettings?.build_terakhir ? formatTanggal(appSettings.build_terakhir) : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pengaturan Umum */}
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+              <Settings size={20} />
+            </div>
+            <h2 className="font-bold text-slate-800">Pengaturan Umum</h2>
+          </div>
+          <form onSubmit={handleUpdateSettings} className="p-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400">Nama Usaha</label>
+                <input 
+                  type="text"
+                  value={editSettings.nama_usaha}
+                  onChange={(e) => setEditSettings({...editSettings, nama_usaha: e.target.value})}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400">WhatsApp Admin</label>
+                <div className="relative">
+                  <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <input 
+                    type="text"
+                    value={editSettings.whatsapp_admin}
+                    onChange={(e) => setEditSettings({...editSettings, whatsapp_admin: e.target.value})}
+                    placeholder="628..."
+                    className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400">Mata Uang</label>
+                <select 
+                  value={editSettings.mata_uang}
+                  onChange={(e) => setEditSettings({...editSettings, mata_uang: e.target.value})}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="IDR">IDR (Rupiah)</option>
+                  <option value="USD">USD (Dollar)</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400">Zona Waktu</label>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <select 
+                    value={editSettings.zona_waktu}
+                    onChange={(e) => setEditSettings({...editSettings, zona_waktu: e.target.value})}
+                    className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
+                    <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
+                    <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button 
+                type="submit"
+                disabled={savingSettings}
+                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-md shadow-blue-100 disabled:opacity-50"
+              >
+                {savingSettings ? 'Menyimpan...' : 'Simpan Pengaturan'}
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -771,8 +931,8 @@ export default function PengaturanPage() {
                   onChange={(e) => setNewUser({...newUser, role: e.target.value})}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 >
+                  <option value="Owner">Owner</option>
                   <option value="Admin">Admin</option>
-                  {user?.is_system_owner && <option value="Owner">Owner</option>}
                 </select>
               </div>
               <div className="flex gap-3 pt-4">
@@ -894,8 +1054,8 @@ export default function PengaturanPage() {
                     disabled={editingUser.is_system_owner || (!user?.is_system_owner && editingUser.role === 'Owner')}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
+                    <option value="Owner">Owner</option>
                     <option value="Admin">Admin</option>
-                    {user?.is_system_owner && <option value="Owner">Owner</option>}
                   </select>
                 </div>
                 <div className="space-y-2">
