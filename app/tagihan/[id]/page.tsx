@@ -130,9 +130,12 @@ export default function TagihanDetailPage() {
                 <div className="text-right">
                   <div className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">Status</div>
                   <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
-                    data.status_tagihan === 'Lunas' ? 'bg-green-500 text-white' : 
-                    data.status_tagihan === 'Sebagian' ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white'
-                  }`}>
+                    data.status_tagihan === 'Lunas' ? 'bg-emerald-500 text-white' : 
+                    data.status_tagihan === 'Sebagian' ? 'bg-amber-500 text-white' : 
+                    data.status_tagihan === 'Belum Bayar' ? 'bg-rose-500 text-white' :
+                    data.status_tagihan === 'Terlambat' ? 'bg-orange-500 text-white' :
+                    'bg-slate-500 text-white'
+                  } ${data.status_tagihan === 'Dibatalkan' ? 'line-through opacity-50' : ''}`}>
                     {data.status_tagihan}
                   </span>
                 </div>

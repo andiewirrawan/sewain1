@@ -30,15 +30,32 @@ export default function TagihanPage() {
     fetchTagihan();
   }, [statusFilter]);
 
-  const handleSendWA = (t: any) => {
+  const handleSendWA = async (t: any) => {
     // Cari semua tagihan penyewa ini yang belum lunas
     const penyewaTagihan = tagihan.filter((item: any) => 
       item.kontrak_sewa?.id_penyewa === t.kontrak_sewa?.id_penyewa
     );
     
+    const totalPiutang = penyewaTagihan.reduce((acc: number, curr: any) => acc + (curr.total_tagihan - curr.terbayar), 0);
+    
     const waUrl = generateWhatsAppTagihan(t.kontrak_sewa?.penyewa, penyewaTagihan);
     if (waUrl) {
       window.open(waUrl, '_blank');
+      
+      // Log to database
+      try {
+        await apiFetch('/api/tagihan/wa-log', {
+          method: 'POST',
+          body: JSON.stringify({
+            id_penyewa: t.kontrak_sewa?.id_penyewa,
+            jumlah_tagihan: penyewaTagihan.length,
+            total_piutang: totalPiutang,
+            status: 'Berhasil'
+          })
+        });
+      } catch (err) {
+        console.error('Gagal mencatat log WA:', err);
+      }
     } else {
       alert('Tidak ada tagihan tertunggak untuk penyewa ini.');
     }
@@ -70,11 +87,17 @@ export default function TagihanPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Lunas':
-        return <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><CheckCircle2 size={12} /> Lunas</span>;
+        return <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><CheckCircle2 size={12} /> Lunas</span>;
       case 'Sebagian':
-        return <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><Clock size={12} /> Sebagian</span>;
+        return <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><Clock size={12} /> Sebagian</span>;
       case 'Belum Bayar':
-        return <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><AlertCircle size={12} /> Belum Bayar</span>;
+        return <span className="bg-rose-100 text-rose-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><AlertCircle size={12} /> Belum Bayar</span>;
+      case 'Terlambat':
+        return <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"><AlertCircle size={12} /> Terlambat</span>;
+      case 'Write Off':
+        return <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-full text-xs font-bold w-fit">Write Off</span>;
+      case 'Dibatalkan':
+        return <span className="bg-slate-100 text-slate-400 px-2 py-1 rounded-full text-xs font-bold w-fit line-through">Dibatalkan</span>;
       default:
         return <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold w-fit">{status}</span>;
     }
@@ -118,7 +141,7 @@ export default function TagihanPage() {
             />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-            {['Semua', 'Belum Bayar', 'Sebagian', 'Lunas'].map((s) => (
+            {['Semua', 'Belum Bayar', 'Sebagian', 'Lunas', 'Terlambat', 'Write Off', 'Dibatalkan'].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}

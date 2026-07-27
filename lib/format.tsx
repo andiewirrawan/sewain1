@@ -48,18 +48,25 @@ export function formatStatus(status: string | null | undefined) {
     bg = 'bg-rose-100';
     text = 'text-rose-700';
   }
-  // Generic Statuses (Contract, Payment, etc)
-  else if (s.includes('aktif') || s.includes('lunas')) {
+  // Generic Statuses (Contract, Payment, Tagihan, etc)
+  else if (s === 'lunas' || s === 'aktif') {
     bg = 'bg-emerald-100';
     text = 'text-emerald-700';
-  } else if (s.includes('selesai')) {
-    bg = 'bg-blue-100';
-    text = 'text-blue-800';
-  } else if (s.includes('putus') || s.includes('belum') || s.includes('tunggak') || s.includes('nonaktif') || s.includes('batal')) {
+  } else if (s === 'sebagian') {
+    bg = 'bg-amber-100';
+    text = 'text-amber-700';
+  } else if (s === 'belum bayar' || s === 'tunggak' || s === 'terlambat') {
     bg = 'bg-rose-100';
     text = 'text-rose-700';
+  } else if (s === 'write off' || s === 'dibatalkan' || s === 'nonaktif' || s === 'putus') {
+    bg = 'bg-slate-200';
+    text = 'text-slate-600';
+  } else if (s === 'selesai') {
+    bg = 'bg-blue-100';
+    text = 'text-blue-800';
   }
 
-  return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${bg} ${text}`}>{status}</span>;
+  const isDibatalkan = s === 'dibatalkan';
+  return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${bg} ${text} ${isDibatalkan ? 'line-through opacity-50' : ''}`}>{status}</span>;
 }
 
