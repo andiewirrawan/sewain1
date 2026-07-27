@@ -23,7 +23,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Derive status_unit from active contract
     const activeContract = data.kontrak_sewa?.find((k: any) => k.status_kontrak === 'Aktif');
-    data.status_unit = activeContract ? 'Terisi' : 'Kosong';
+    if (activeContract) {
+      data.status_unit = 'Terisi';
+    }
 
     return NextResponse.json(data);
   } catch (error: any) {
@@ -39,6 +41,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const body = await req.json();
+    const { kode_unit } = body;
+
+    // Check duplicate if kode_unit is changed
+    if (kode_unit) {
+      const { data: existing } = await supabase
+        .from('unit')
+        .select('id_unit')
+        .eq('kode_unit', kode_unit)
+        .neq('id_unit', id)
+        .maybeSingle();
+
+      if (existing) {
+        return NextResponse.json({ message: `Unit dengan kode ${kode_unit} sudah ada.` }, { status: 409 });
+      }
+    }
 
     const { data: oldData } = await supabase.from('unit').select('*').eq('id_unit', id).single();
 

@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
       return {
         ...unit,
-        status_unit: activeContract ? 'Terisi' : 'Kosong',
+        status_unit: activeContract ? 'Terisi' : unit.status_unit,
         penyewa_aktif: penyewaNama,
         jatuh_tempo: activeContract?.tanggal_jatuh_tempo || null,
       };
