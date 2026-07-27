@@ -26,9 +26,28 @@ export async function GET(
 
     if (kontrakError) throw kontrakError;
 
-    // 2. Ambil Riwayat Pembayaran Penyewa
+    // 2. Ambil Riwayat Tagihan Penyewa
     const kontrakIds = kontrakData?.map(k => k.id_kontrak) || [];
     
+    let tagihanData: any[] = [];
+    if (kontrakIds.length > 0) {
+      const { data: tData, error: tError } = await supabase
+        .from('tagihan')
+        .select(`
+          *,
+          kontrak_sewa (
+            nomor_kontrak,
+            unit (kode_unit)
+          )
+        `)
+        .in('id_kontrak', kontrakIds)
+        .order('periode', { ascending: false });
+      
+      if (tError) throw tError;
+      tagihanData = tData || [];
+    }
+
+    // 3. Ambil Riwayat Pembayaran Penyewa
     let pembayaranData: any[] = [];
     if (kontrakIds.length > 0) {
       const { data: payData, error: payError } = await supabase
@@ -47,13 +66,16 @@ export async function GET(
       pembayaranData = payData || [];
     }
 
-    // 3. Hitung Ringkasan
+    // 4. Hitung Ringkasan
     const summary = {
       total_pembayaran: pembayaranData
         .filter(p => p.status_pembayaran === 'Lunas')
         .reduce((sum, p) => sum + (p.nominal || 0), 0),
-      jumlah_tunggakan: pembayaranData
-        .filter(p => p.status_pembayaran === 'Belum Bayar' || p.status_pembayaran === 'Terlambat')
+      total_piutang: tagihanData
+        .filter(t => !['Lunas', 'Dibatalkan', 'Write Off'].includes(t.status_tagihan))
+        .reduce((sum, t) => sum + ((t.total_tagihan || 0) - (t.terbayar || 0)), 0),
+      jumlah_tunggakan: tagihanData
+        .filter(t => !['Lunas', 'Dibatalkan', 'Write Off'].includes(t.status_tagihan))
         .length,
       total_lama_menyewa_hari: kontrakData.reduce((total, k) => {
         const masuk = new Date(k.tanggal_masuk);
@@ -66,6 +88,7 @@ export async function GET(
 
     return NextResponse.json({
       riwayat_kontrak: kontrakData,
+      riwayat_tagihan: tagihanData,
       riwayat_pembayaran: pembayaranData,
       summary
     });

@@ -139,25 +139,24 @@ export default function DetailPenyewaPage() {
 
         {/* Sections on the Right */}
         <div className="md:col-span-2 space-y-6">
-          {/* 5. Ringkasan */}
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4 text-center">Ringkasan Keuangan</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-gray-50 rounded-xl">
-                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Bayar</p>
+                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Pembayaran</p>
                 <p className="text-sm font-bold text-gray-900">{formatRupiah(riwayat?.summary?.total_pembayaran || 0)}</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-xl">
-                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Tunggakan</p>
-                <p className="text-sm font-bold text-red-600">{riwayat?.summary?.jumlah_tunggakan || 0} Periode</p>
+                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Piutang</p>
+                <p className="text-sm font-bold text-rose-600">{formatRupiah(riwayat?.summary?.total_piutang || 0)}</p>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-xl">
+                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Jumlah Tunggakan</p>
+                <p className="text-sm font-bold text-amber-600">{riwayat?.summary?.jumlah_tunggakan || 0} Periode</p>
               </div>
               <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
                 <p className="text-[10px] uppercase font-bold text-blue-500 mb-1">Saldo Titipan</p>
                 <p className="text-sm font-bold text-blue-700">{formatRupiah(penyewa.saldo_titipan || 0)}</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-xl">
-                <p className="text-[10px] uppercase font-bold text-gray-500 mb-1">Lama Sewa</p>
-                <p className="text-sm font-bold text-gray-600">{riwayat?.summary?.total_lama_menyewa_hari || 0} Hari</p>
               </div>
             </div>
           </div>
@@ -275,32 +274,36 @@ export default function DetailPenyewaPage() {
             </div>
           </div>
 
-          {/* 4. Riwayat Pembayaran Penyewa */}
+          {/* 4. Riwayat Tagihan (Ganti Riwayat Pembayaran karena lebih informatif) */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Riwayat Pembayaran</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-3 mb-4">Riwayat Tagihan</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
                   <tr>
-                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Periode</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Unit</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-2 text-left">Periode</th>
+                    <th className="px-4 py-2 text-left">Unit</th>
+                    <th className="px-4 py-2 text-right">Tagihan</th>
+                    <th className="px-4 py-2 text-right">Terbayar</th>
+                    <th className="px-4 py-2 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {riwayat?.riwayat_pembayaran?.length > 0 ? (
-                    riwayat.riwayat_pembayaran.slice(0, 5).map((p: any) => (
-                      <tr key={p.id_pembayaran}>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.periode}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{p.kontrak_sewa?.unit?.kode_unit}</td>
-                        <td className="px-4 py-3">
-                          {formatStatus(p.status_pembayaran)}
+                  {riwayat?.riwayat_tagihan?.length > 0 ? (
+                    riwayat.riwayat_tagihan.slice(0, 10).map((t: any) => (
+                      <tr key={t.id_tagihan} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{t.periode}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{t.kontrak_sewa?.unit?.kode_unit}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">{formatRupiah(t.total_tagihan)}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-emerald-600 text-right">{formatRupiah(t.terbayar || 0)}</td>
+                        <td className="px-4 py-3 text-center">
+                          {formatStatus(t.status_tagihan)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={3} className="px-4 py-4 text-center text-sm text-gray-400 italic">Belum ada transaksi pembayaran</td>
+                      <td colSpan={5} className="px-4 py-4 text-center text-sm text-gray-400 italic">Belum ada riwayat tagihan</td>
                     </tr>
                   )}
                 </tbody>

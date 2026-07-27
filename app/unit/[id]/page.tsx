@@ -134,19 +134,28 @@ export default function DetailUnitPage() {
         {/* Kolom Kanan: Riwayat & Ringkasan */}
         <div className="lg:col-span-2 space-y-6">
           {/* 5. Ringkasan */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 grid grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
                 <BarChart size={20} />
               </div>
               <div>
-                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Lunas</p>
-                <p className="text-sm font-bold text-slate-900">{formatRupiah(riwayat?.summary?.total_pembayaran_lunas || 0)}</p>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Pembayaran</p>
+                <p className="text-sm font-bold text-slate-900">{formatRupiah(riwayat?.summary?.total_pembayaran || 0)}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
               <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center text-rose-600 shrink-0">
                 <AlertCircle size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Piutang</p>
+                <p className="text-sm font-bold text-rose-600">{formatRupiah(riwayat?.summary?.total_piutang || 0)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 shrink-0">
+                <Clock size={20} />
               </div>
               <div>
                 <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tunggakan</p>
@@ -200,39 +209,37 @@ export default function DetailUnitPage() {
             </div>
           </div>
 
-          {/* 4. Riwayat Pembayaran */}
+          {/* 4. Riwayat Tagihan (Ganti Riwayat Pembayaran karena lebih informatif) */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
               <Receipt size={18} className="text-slate-400" />
-              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Riwayat Pembayaran Unit</h3>
+              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Riwayat Tagihan Unit</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 tracking-wider border-b border-slate-100">
                   <tr>
                     <th className="px-5 py-3">Periode</th>
-                    <th className="px-5 py-3">Nominal</th>
+                    <th className="px-5 py-3">Tagihan</th>
+                    <th className="px-5 py-3">Terbayar</th>
                     <th className="px-5 py-3">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {riwayat?.riwayat_pembayaran?.length > 0 ? (
-                    riwayat.riwayat_pembayaran.slice(0, 10).map((p: any) => (
-                      <tr key={p.id_pembayaran} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3 font-medium text-slate-900">{p.periode}</td>
-                        <td className="px-5 py-3 text-slate-600">{formatRupiah(p.nominal)}</td>
+                  {riwayat?.riwayat_tagihan?.length > 0 ? (
+                    riwayat.riwayat_tagihan.slice(0, 10).map((t: any) => (
+                      <tr key={t.id_tagihan} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-3 font-medium text-slate-900">{t.periode}</td>
+                        <td className="px-5 py-3 text-slate-900 font-semibold">{formatRupiah(t.total_tagihan)}</td>
+                        <td className="px-5 py-3 text-emerald-600 font-medium">{formatRupiah(t.terbayar || 0)}</td>
                         <td className="px-5 py-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            p.status_pembayaran === 'Lunas' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                          }`}>
-                            {p.status_pembayaran}
-                          </span>
+                          {formatStatus(t.status_tagihan)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={3} className="px-5 py-8 text-center text-slate-400 italic">Belum ada riwayat pembayaran</td>
+                      <td colSpan={4} className="px-5 py-8 text-center text-slate-400 italic">Belum ada riwayat tagihan</td>
                     </tr>
                   )}
                 </tbody>
