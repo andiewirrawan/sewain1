@@ -38,8 +38,8 @@ const menuGroups = [
   {
     title: 'Keuangan',
     items: [
-      { name: 'Piutang', href: '/tagihan', icon: Receipt },
-      { name: 'Pembayaran', href: '/pembayaran', icon: CreditCard },
+      { name: 'Daftar Tagihan', href: '/tagihan', icon: Receipt },
+      { name: 'Input Pembayaran', href: '/pembayaran', icon: CreditCard },
     ]
   },
   {
