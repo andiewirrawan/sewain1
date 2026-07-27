@@ -107,7 +107,7 @@ export default function TagihanPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Daftar Tagihan</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Daftar Piutang</h1>
           <p className="text-slate-500">Kelola piutang dan penagihan sewa unit</p>
         </div>
         <div className="flex flex-wrap gap-3">

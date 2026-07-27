@@ -51,6 +51,8 @@ export async function PUT(req: NextRequest) {
 
     if (error) throw error;
 
+    await catatAuditLog(user, 'UPDATE', 'pengaturan_aplikasi', '1', oldData, data);
+
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('Error updating settings:', error);

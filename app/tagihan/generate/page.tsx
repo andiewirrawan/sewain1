@@ -77,7 +77,7 @@ export default function GenerateTagihanPage() {
 
       <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
         <div className="p-8 border-b border-slate-50 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
-          <h1 className="text-2xl font-bold">Generate Tagihan Bulanan</h1>
+          <h1 className="text-2xl font-bold">Generate Piutang Bulanan</h1>
           <p className="text-blue-100/80 mt-1">Sistem akan otomatis membuat tagihan untuk seluruh kontrak aktif</p>
         </div>
 
@@ -96,7 +96,7 @@ export default function GenerateTagihanPage() {
                   onClick={() => router.push('/tagihan')}
                   className="mt-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-md"
                 >
-                  Lihat Daftar Tagihan
+                  Lihat Daftar Piutang
                 </button>
               ) : (
                 <button 
