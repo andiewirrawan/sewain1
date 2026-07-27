@@ -112,7 +112,24 @@ export async function DELETE(request: Request, context: any) {
       return NextResponse.json({ message: 'Kontrak tidak ditemukan' }, { status: 404 });
     }
     
-    const { data: payments } = await supabase.from('pembayaran').select('id_pembayaran').eq('id_kontrak', id);
+    // Check dependencies: tagihan
+    const { data: tagihan } = await supabase
+      .from('tagihan')
+      .select('id_tagihan')
+      .eq('id_kontrak', id)
+      .limit(1);
+      
+    if (tagihan && tagihan.length > 0) {
+       return NextResponse.json({ message: 'Tidak dapat menghapus kontrak karena sudah memiliki data tagihan' }, { status: 400 });
+    }
+
+    // Check dependencies: pembayaran
+    const { data: payments } = await supabase
+      .from('pembayaran')
+      .select('id_pembayaran')
+      .eq('id_kontrak', id)
+      .limit(1);
+      
     if (payments && payments.length > 0) {
        return NextResponse.json({ message: 'Tidak dapat menghapus kontrak karena sudah memiliki riwayat pembayaran' }, { status: 400 });
     }
