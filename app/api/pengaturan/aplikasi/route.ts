@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getUserFromRequest, requireRole } from '@/lib/auth';
+import { catatAuditLog } from '@/lib/audit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,6 +36,12 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     const { nama_usaha, whatsapp_admin, mata_uang, zona_waktu } = body;
+
+    const { data: oldData } = await supabase
+      .from('pengaturan_aplikasi')
+      .select('*')
+      .eq('id', 1)
+      .single();
 
     const { data, error } = await supabase
       .from('pengaturan_aplikasi')

@@ -565,9 +565,9 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Initial Users (Passwords are 'password123' hashed)
 INSERT INTO users (id, nama, email, password, role, is_system_owner) VALUES
-('11111111-1111-1111-1111-111111111111', 'System Manager', 'system@sewain.com', '$2b$10$W1.R6kC6nE/eY6W7Z7RzEuWj7m5G7X7oJ4oZ1j3mF6G7n6v.i.K3W', 'System Owner', true),
-('caf7d1dd-46f1-48c3-9807-c2662360af9e', 'Rita Syalalla', 'ritasyalalla@gmail.com', '$2b$10$W1.R6kC6nE/eY6W7Z7RzEuWj7m5G7X7oJ4oZ1j3mF6G7n6v.i.K3W', 'Owner', false),
-('7ff7e514-183d-43f6-bc2a-7ce813ede100', 'Admin Operasional', 'admin@sewain.com', '$2b$10$W1.R6kC6nE/eY6W7Z7RzEuWj7m5G7X7oJ4oZ1j3mF6G7n6v.i.K3W', 'Admin', false);
+('11111111-1111-1111-1111-111111111111', 'System Manager', 'system@sewain.com', '$2b$10$pYMfby69Ayr4DJ9UxveYruSorO5daHzSX85V8.mqUj/yCFTAVtWe2', 'System Owner', true),
+('caf7d1dd-46f1-48c3-9807-c2662360af9e', 'Rita Syalalla', 'ritasyalalla@gmail.com', '$2b$10$pYMfby69Ayr4DJ9UxveYruSorO5daHzSX85V8.mqUj/yCFTAVtWe2', 'Owner', false),
+('7ff7e514-183d-43f6-bc2a-7ce813ede100', 'Admin Operasional', 'admin@sewain.com', '$2b$10$pYMfby69Ayr4DJ9UxveYruSorO5daHzSX85V8.mqUj/yCFTAVtWe2', 'Admin', false);
 
 -- PROMO DATA
 INSERT INTO promo (id_promo, nama_promo, jenis_diskon, nilai_diskon, tanggal_mulai, tanggal_selesai, status, deskripsi, prioritas) VALUES
