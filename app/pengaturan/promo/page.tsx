@@ -51,7 +51,7 @@ export default function PromoPage() {
     tanggal_mulai: '',
     tanggal_selesai: '',
     status: 'Aktif',
-    keterangan: '',
+    deskripsi: '',
     prioritas: '0',
     id_penyewa_list: [] as string[]
   });
@@ -178,7 +178,7 @@ export default function PromoPage() {
       tanggal_mulai: '',
       tanggal_selesai: '',
       status: 'Aktif',
-      keterangan: '',
+      deskripsi: '',
       prioritas: '0',
       id_penyewa_list: []
     });
@@ -195,7 +195,7 @@ export default function PromoPage() {
         tanggal_mulai: data.tanggal_mulai,
         tanggal_selesai: data.tanggal_selesai,
         status: data.status,
-        keterangan: data.keterangan || '',
+        deskripsi: data.deskripsi || '',
         prioritas: (data.prioritas || 0).toString(),
         id_penyewa_list: data.promo_penyewa?.map((pp: any) => pp.id_penyewa) || []
       });
@@ -460,37 +460,40 @@ export default function PromoPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Status</label>
-                    <select 
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="Aktif">Aktif</option>
-                      <option value="Tidak Aktif">Tidak Aktif</option>
-                    </select>
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Status</label>
+                      <select 
+                        value={formData.status}
+                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      >
+                        <option value="Aktif">Aktif</option>
+                        <option value="Tidak Aktif">Tidak Aktif</option>
+                      </select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Prioritas</label>
-                    <div className="flex items-center gap-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase">Prioritas</label>
+                        <p className="text-[10px] text-slate-400 italic font-normal">(Angka tinggi = Lebih Utama)</p>
+                      </div>
                       <input 
                         type="number" 
                         value={formData.prioritas}
                         onChange={(e) => setFormData({...formData, prioritas: e.target.value})}
-                        className="w-24 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="0"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                       />
-                      <p className="text-[10px] text-slate-400 italic">Angka lebih tinggi = Prioritas lebih tinggi jika ada bentrok promo.</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Keterangan</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Deskripsi</label>
                     <textarea 
                       rows={3}
-                      value={formData.keterangan}
-                      onChange={(e) => setFormData({...formData, keterangan: e.target.value})}
+                      value={formData.deskripsi}
+                      onChange={(e) => setFormData({...formData, deskripsi: e.target.value})}
                       placeholder="Catatan tambahan mengenai promo ini..."
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                     />
@@ -623,8 +626,12 @@ export default function PromoPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Keterangan</p>
-                        <p className="text-sm text-slate-600 leading-relaxed">{showDetailModal.keterangan || '-'}</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Prioritas</p>
+                        <p className="text-sm font-bold text-slate-700">P{showDetailModal.prioritas || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Deskripsi</p>
+                        <p className="text-sm text-slate-600 leading-relaxed">{showDetailModal.deskripsi || '-'}</p>
                       </div>
                     </div>
                   </div>

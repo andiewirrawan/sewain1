@@ -75,7 +75,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     const { id } = params;
     const body = await request.json();
-    const { nama_promo, jenis_diskon, nilai_diskon, tanggal_mulai, tanggal_selesai, status, keterangan, id_penyewa_list, prioritas } = body;
+    const { nama_promo, jenis_diskon, nilai_diskon, tanggal_mulai, tanggal_selesai, status, deskripsi, id_penyewa_list, prioritas } = body;
 
     const { data: oldPromo } = await supabase.from('promo').select('*').eq('id_promo', id).single();
 
@@ -88,7 +88,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         tanggal_mulai, 
         tanggal_selesai, 
         status, 
-        keterangan,
+        deskripsi,
         prioritas: prioritas !== undefined ? parseInt(prioritas) : undefined,
         updated_at: new Date().toISOString()
       })

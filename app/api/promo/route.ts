@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nama_promo, jenis_diskon, nilai_diskon, tanggal_mulai, tanggal_selesai, status, keterangan, id_penyewa_list, prioritas } = body;
+    const { nama_promo, jenis_diskon, nilai_diskon, tanggal_mulai, tanggal_selesai, status, deskripsi, id_penyewa_list, prioritas } = body;
 
     if (!nama_promo || !jenis_diskon || !nilai_diskon || !tanggal_mulai || !tanggal_selesai) {
       return NextResponse.json({ message: 'Field wajib diisi' }, { status: 400 });
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
           tanggal_mulai, 
           tanggal_selesai, 
           status: status || 'Aktif', 
-          keterangan,
+          deskripsi,
           prioritas: prioritas ? parseInt(prioritas) : 0
         }
       ])

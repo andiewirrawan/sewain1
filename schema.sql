@@ -80,6 +80,7 @@ CREATE TABLE promo (
     tanggal_mulai DATE NOT NULL,
     tanggal_selesai DATE NOT NULL,
     status promo_status_type DEFAULT 'Aktif',
+    prioritas INTEGER DEFAULT 0,
     deskripsi TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -277,6 +278,7 @@ BEGIN
         WHERE pp.id_penyewa = v_kontrak.id_penyewa
         AND pr.status = 'Aktif'
         AND v_jatuh_tempo BETWEEN pr.tanggal_mulai AND pr.tanggal_selesai
+        ORDER BY pr.prioritas DESC
         LIMIT 1;
 
         IF v_id_promo IS NOT NULL THEN
