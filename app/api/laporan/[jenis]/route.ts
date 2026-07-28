@@ -44,9 +44,8 @@ export async function GET(
         if (!acc[u.jenis_unit]) acc[u.jenis_unit] = { jenis_unit: u.jenis_unit, total: 0, terisi: 0, kosong: 0 };
         acc[u.jenis_unit].total++;
         
-        const hasActiveContract = Array.isArray(u.kontrak_sewa) 
-          ? u.kontrak_sewa.some((k: any) => k.status_kontrak === 'Aktif')
-          : (u.kontrak_sewa?.status_kontrak === 'Aktif');
+        const contracts = Array.isArray(u.kontrak_sewa) ? u.kontrak_sewa : (u.kontrak_sewa ? [u.kontrak_sewa] : []);
+        const hasActiveContract = contracts.some((k: any) => k.status_kontrak === 'Aktif');
 
         if (hasActiveContract) acc[u.jenis_unit].terisi++;
         else acc[u.jenis_unit].kosong++;
@@ -55,7 +54,7 @@ export async function GET(
       data = Object.values(occupancyObj || {});
       totalCount = data.length;
     } else if (jenis === 'pendapatan') {
-      let q = supabase.from('pembayaran').select('tanggal_bayar, periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), nominal, metode_pembayaran', { count: 'exact' }).eq('status_pembayaran', 'Lunas');
+      let q = supabase.from('pembayaran').select('tanggal_bayar, periode, nominal, metode_pembayaran, penyewa(nama), kontrak_sewa(unit(kode_unit))', { count: 'exact' }).eq('status_pembayaran', 'Lunas');
       if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
       else if (tahun) q = q.ilike('periode', `%-${tahun}`);
       
@@ -65,7 +64,7 @@ export async function GET(
       data = p;
       totalCount = count || 0;
     } else if (jenis === 'tunggakan') {
-      let q = supabase.from('tagihan').select('kontrak_sewa(id_kontrak, penyewa(nama), unit(kode_unit)), jatuh_tempo, periode, total_tagihan, terbayar, status_tagihan', { count: 'exact' })
+      let q = supabase.from('tagihan').select('jatuh_tempo, periode, total_tagihan, terbayar, status_tagihan, kontrak_sewa(penyewa(nama), unit(kode_unit))', { count: 'exact' })
         .not('status_tagihan', 'in', '("Lunas","Dibatalkan","Write Off")');
       
       if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
@@ -77,7 +76,7 @@ export async function GET(
       data = t;
       totalCount = count || 0;
     } else if (jenis === 'pembayaran') {
-      let q = supabase.from('pembayaran').select('periode, kontrak_sewa(penyewa(nama), unit(kode_unit)), tanggal_bayar, nominal, status_pembayaran, metode_pembayaran', { count: 'exact' });
+      let q = supabase.from('pembayaran').select('periode, tanggal_bayar, nominal, status_pembayaran, metode_pembayaran, penyewa(nama), kontrak_sewa(unit(kode_unit))', { count: 'exact' });
       if (bulan) q = q.eq('periode', `${bulan}-${tahun || new Date().getFullYear()}`);
       else if (tahun) q = q.ilike('periode', `%-${tahun}`);
       if (!noPagination) q = q.range(from, to);
@@ -86,21 +85,21 @@ export async function GET(
       data = p;
       totalCount = count || 0;
     } else if (jenis === 'penyewa-aktif') {
-      let q = supabase.from('kontrak_sewa').select('penyewa(nama, whatsapp), unit(kode_unit), tanggal_masuk, status_kontrak', { count: 'exact' }).eq('status_kontrak', 'Aktif');
+      let q = supabase.from('kontrak_sewa').select('tanggal_masuk, status_kontrak, penyewa(nama, whatsapp), unit(kode_unit)', { count: 'exact' }).eq('status_kontrak', 'Aktif');
       if (!noPagination) q = q.range(from, to);
       const { data: p, error: e, count } = await q.order('tanggal_masuk', { ascending: false });
       error = e;
       data = p;
       totalCount = count || 0;
     } else if (jenis === 'riwayat-penyewa') {
-      let q = supabase.from('kontrak_sewa').select('penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak', { count: 'exact' });
+      let q = supabase.from('kontrak_sewa').select('tanggal_masuk, tanggal_keluar, status_kontrak, penyewa(nama), unit(kode_unit)', { count: 'exact' });
       if (!noPagination) q = q.range(from, to);
       const { data: r, error: e, count } = await q.order('tanggal_masuk', { ascending: false });
       error = e;
       data = r;
       totalCount = count || 0;
     } else if (jenis === 'kontrak') {
-      let q = supabase.from('kontrak_sewa').select('nomor_kontrak, penyewa(nama), unit(kode_unit), tanggal_masuk, tanggal_keluar, status_kontrak', { count: 'exact' });
+      let q = supabase.from('kontrak_sewa').select('nomor_kontrak, tanggal_masuk, tanggal_keluar, status_kontrak, penyewa(nama), unit(kode_unit)', { count: 'exact' });
       if (!noPagination) q = q.range(from, to);
       const { data: k, error: e, count } = await q.order('tanggal_masuk', { ascending: false });
       error = e;

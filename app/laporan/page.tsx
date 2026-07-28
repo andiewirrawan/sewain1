@@ -89,6 +89,11 @@ export default function LaporanPage() {
       const flattenedData = reportData.map(item => {
           let flat: any = { ...item };
           const display: any = {};
+
+          // Helper to get safe name and unit
+          const getPenyewa = (obj: any) => obj.penyewa?.nama || obj.kontrak_sewa?.penyewa?.nama || obj.penyewa || '-';
+          const getUnit = (obj: any) => obj.unit?.kode_unit || obj.kontrak_sewa?.unit?.kode_unit || obj.unit || '-';
+
           if (jenis === 'occupancy') {
             display['Jenis Unit'] = flat.jenis_unit;
             display['Total Unit'] = flat.total;
@@ -98,13 +103,13 @@ export default function LaporanPage() {
           } else if (jenis === 'pendapatan') {
             display['Tanggal Bayar'] = formatTanggal(flat.tanggal_bayar);
             display['Periode'] = flat.periode;
-            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
-            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : flat.unit;
+            display['Penyewa'] = getPenyewa(flat);
+            display['Unit'] = getUnit(flat);
             display['Nominal'] = formatRupiah(flat.nominal);
             display['Metode'] = flat.metode_pembayaran;
           } else if (jenis === 'tunggakan') {
-            display['Penyewa'] = flat.kontrak_sewa?.penyewa?.nama;
-            display['Unit'] = flat.kontrak_sewa?.unit?.kode_unit;
+            display['Penyewa'] = getPenyewa(flat);
+            display['Unit'] = getUnit(flat);
             display['Periode'] = flat.periode;
             display['Tagihan'] = formatRupiah(flat.total_tagihan);
             display['Terbayar'] = formatRupiah(flat.terbayar);
@@ -113,28 +118,28 @@ export default function LaporanPage() {
             display['Status'] = flat.status_tagihan;
           } else if (jenis === 'pembayaran') {
             display['Periode'] = flat.periode;
-            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : flat.penyewa;
-            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : flat.unit;
+            display['Penyewa'] = getPenyewa(flat);
+            display['Unit'] = getUnit(flat);
             display['Tanggal Bayar'] = formatTanggal(flat.tanggal_bayar);
             display['Nominal'] = formatRupiah(flat.nominal);
             display['Status'] = flat.status_pembayaran;
             display['Metode'] = flat.metode_pembayaran;
           } else if (jenis === 'penyewa-aktif') {
-            display['Nama Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : (flat.penyewa || '-');
+            display['Nama Penyewa'] = getPenyewa(flat);
             display['WhatsApp'] = flat.whatsapp || flat.penyewa?.whatsapp || '-';
-            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : (flat.unit || '-');
+            display['Unit'] = getUnit(flat);
             display['Tanggal Masuk'] = formatTanggal(flat.tanggal_masuk);
             display['Status'] = flat.status_kontrak;
           } else if (jenis === 'riwayat-penyewa') {
-            display['Nama Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : (flat.penyewa || '-');
-            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : (flat.unit || '-');
+            display['Nama Penyewa'] = getPenyewa(flat);
+            display['Unit'] = getUnit(flat);
             display['Tanggal Masuk'] = formatTanggal(flat.tanggal_masuk);
             display['Tanggal Keluar'] = formatTanggal(flat.tanggal_keluar);
             display['Status'] = flat.status_kontrak;
           } else if (jenis === 'kontrak') {
             display['No Kontrak'] = flat.nomor_kontrak;
-            display['Penyewa'] = typeof flat.penyewa === 'object' ? flat.penyewa?.nama : (flat.penyewa || '-');
-            display['Unit'] = typeof flat.unit === 'object' ? flat.unit?.kode_unit : (flat.unit || '-');
+            display['Penyewa'] = getPenyewa(flat);
+            display['Unit'] = getUnit(flat);
             display['Masuk'] = formatTanggal(flat.tanggal_masuk);
             display['Keluar'] = formatTanggal(flat.tanggal_keluar);
             display['Status'] = flat.status_kontrak;
