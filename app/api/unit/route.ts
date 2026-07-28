@@ -95,7 +95,16 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase.from('unit').insert(body).select().single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting unit:', error);
+      // Return 400 for database constraint violations or other client-side errors
+      return NextResponse.json({ 
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      }, { status: 400 });
+    }
 
     await catatAuditLog(user, 'CREATE', 'unit', data.id_unit, null, data);
 

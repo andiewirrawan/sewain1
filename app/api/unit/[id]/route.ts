@@ -66,7 +66,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating unit:', error);
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
 
     await catatAuditLog(user, 'UPDATE', 'unit', id, oldData, data);
 
@@ -90,7 +93,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const { error } = await supabase.from('unit').delete().eq('id_unit', id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting unit:', error);
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
 
     await catatAuditLog(user, 'DELETE', 'unit', id, oldData, null);
 

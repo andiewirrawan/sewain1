@@ -46,12 +46,13 @@ export default function TambahUnitPage() {
       if (res.ok) {
         router.push('/unit');
       } else {
-        const error = await res.json();
-        alert(error.message || 'Gagal menyimpan unit');
+        const errorData = await res.json();
+        alert(errorData.message || errorData.error || 'Gagal menyimpan unit');
+        console.error('Save unit error:', errorData);
       }
-    } catch (error) {
-      console.error(error);
-      alert('Terjadi kesalahan');
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      alert(error.message || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
     }

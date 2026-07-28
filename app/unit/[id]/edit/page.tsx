@@ -73,12 +73,13 @@ export default function EditUnitPage() {
       if (res.ok) {
         router.push(`/unit/${id}`);
       } else {
-        const error = await res.json();
-        alert(error.message || 'Gagal mengubah unit');
+        const errorData = await res.json();
+        alert(errorData.message || errorData.error || 'Gagal mengubah unit');
+        console.error('Update unit error:', errorData);
       }
-    } catch (error) {
-      console.error(error);
-      alert('Terjadi kesalahan');
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      alert(error.message || 'Terjadi kesalahan');
     } finally {
       setLoading(false);
     }

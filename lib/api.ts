@@ -42,7 +42,15 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   }
 
   if (response.status >= 500) {
-    throw new Error(`Terjadi kesalahan server (HTTP ${response.status}).`);
+    let message = `Terjadi kesalahan server (HTTP ${response.status}).`;
+    try {
+      const data = await response.clone().json();
+      if (data.message) message = data.message;
+      else if (data.error) message = data.error;
+    } catch (e) {
+      // Ignore parse error
+    }
+    throw new Error(message);
   }
 
   return response;
