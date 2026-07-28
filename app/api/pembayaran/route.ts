@@ -24,6 +24,10 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         penyewa (nama),
+        kontrak_sewa (
+          unit (kode_unit),
+          penyewa (nama)
+        ),
         alokasi_pembayaran (
           id_alokasi,
           nominal_alokasi,
@@ -41,7 +45,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`penyewa(nama).ilike.%${search}%,metode_pembayaran.ilike.%${search}%`);
+      // Searching across multiple relations and fields
+      query = query.or(`periode.ilike.%${search}%,metode_pembayaran.ilike.%${search}%,penyewa(nama).ilike.%${search}%`);
     }
 
     const { data, count, error } = await query

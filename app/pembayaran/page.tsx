@@ -250,7 +250,7 @@ export default function PembayaranPage() {
                       {p.periode}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{p.kontrak_sewa?.penyewa?.nama || '-'}</div>
+                      <div className="text-sm text-gray-900">{p.kontrak_sewa?.penyewa?.nama || p.penyewa?.nama || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
                       {p.kontrak_sewa?.unit?.kode_unit || '-'}
