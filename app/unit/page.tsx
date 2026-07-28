@@ -144,6 +144,7 @@ export default function UnitPage() {
             <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-semibold">Kode Unit</th>
+                <th className="px-6 py-4 font-semibold">Kategori</th>
                 <th className="px-6 py-4 font-semibold">Jenis Unit</th>
                 <th className="px-6 py-4 font-semibold">Harga Sewa</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
@@ -155,11 +156,11 @@ export default function UnitPage() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">Memuat data...</td>
+                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Memuat data...</td>
                 </tr>
               ) : units.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">Tidak ada data unit.</td>
+                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Tidak ada data unit.</td>
                 </tr>
               ) : (
                 units.map((unit) => (
@@ -169,6 +170,7 @@ export default function UnitPage() {
                     onClick={() => router.push(`/unit/${unit.id_unit}`)}
                   >
                     <td className="px-6 py-4 font-mono text-xs font-semibold text-slate-700">{unit.kode_unit}</td>
+                    <td className="px-6 py-4 text-slate-600">{unit.kategori || '-'}</td>
                     <td className="px-6 py-4 text-slate-600">{unit.jenis_unit}</td>
                     <td className="px-6 py-4 font-medium text-slate-800">{formatRupiah(unit.harga_sewa)}</td>
                     <td className="px-6 py-4">

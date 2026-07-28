@@ -12,7 +12,9 @@ export default function TambahUnitPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     kode_unit: '',
+    kategori: '',
     jenis_unit: 'Kios',
+    nomor_unit: '',
     harga_sewa: '',
     status_unit: 'Kosong'
   });
@@ -27,6 +29,12 @@ export default function TambahUnitPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.kategori) {
+      alert('Kategori wajib diisi');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -86,6 +94,20 @@ export default function TambahUnitPage() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Kategori</label>
+              <select 
+                name="kategori"
+                required
+                value={formData.kategori}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              >
+                <option value="">Pilih Kategori</option>
+                <option value="Pujasera">Pujasera</option>
+                <option value="Kos">Kos</option>
+              </select>
+            </div>
+            <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Jenis Unit</label>
               <select 
                 name="jenis_unit"
@@ -100,6 +122,18 @@ export default function TambahUnitPage() {
                 <option value="Ruko">Ruko</option>
                 <option value="Gudang">Gudang</option>
               </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Nomor Unit</label>
+              <input 
+                type="text" 
+                name="nomor_unit"
+                required
+                value={formData.nomor_unit}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400"
+                placeholder="Contoh: A-01"
+              />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Harga Sewa (Rp)</label>

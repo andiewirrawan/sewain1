@@ -83,6 +83,16 @@ export default function DetailUnitPage() {
               <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Informasi Unit</h3>
             </div>
             <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-slate-500 font-medium">Kategori</p>
+                  <p className="text-sm font-semibold text-slate-900 mt-0.5">{unit.kategori || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium">Nomor Unit</p>
+                  <p className="text-sm font-semibold text-slate-900 mt-0.5">{unit.nomor_unit || '-'}</p>
+                </div>
+              </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Jenis Unit</p>
                 <p className="text-sm font-semibold text-slate-900 mt-0.5">{unit.jenis_unit}</p>
