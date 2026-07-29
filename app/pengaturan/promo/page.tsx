@@ -89,7 +89,7 @@ export default function PromoPage() {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
     
-    if (parsedUser.role !== 'Owner') {
+    if (parsedUser.role !== 'Owner' && !parsedUser.is_system_owner) {
       router.push('/dashboard');
       return;
     }

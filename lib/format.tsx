@@ -28,6 +28,20 @@ export function formatPhone(phone: string | null | undefined): string {
   return phone; // You can add actual formatting here if needed like 0812-XXXX-XXXX
 }
 
+export function formatJam(dateString: string | null | undefined): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+export function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '-';
+  return date.toLocaleString('id-ID');
+}
+
 export function formatStatus(status: string | null | undefined) {
   if (!status) return <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">-</span>;
   const s = status.toLowerCase();

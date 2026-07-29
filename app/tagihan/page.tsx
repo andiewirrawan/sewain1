@@ -21,6 +21,7 @@ import { generateWhatsAppTagihan } from '@/lib/whatsapp';
 export default function TagihanPage() {
   const [tagihan, setTagihan] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,24 +131,27 @@ export default function TagihanPage() {
   const fetchTagihan = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       let url = '/api/tagihan';
       if (statusFilter !== 'Semua') {
         url += `?status=${statusFilter}`;
       }
       const res = await apiFetch(url);
+      if (!res.ok) throw new Error('Gagal mengambil data tagihan');
       const data = await res.json();
       setTagihan(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'Terjadi kesalahan saat memuat tagihan');
     } finally {
       setLoading(false);
     }
   }, [statusFilter]);
 
   const filteredTagihan = tagihan.filter((t: any) => 
-    t.kontrak_sewa?.penyewa?.nama.toLowerCase().includes(search.toLowerCase()) ||
-    t.kontrak_sewa?.nomor_kontrak.toLowerCase().includes(search.toLowerCase()) ||
-    t.periode.toLowerCase().includes(search.toLowerCase())
+    t.kontrak_sewa?.penyewa?.nama?.toLowerCase().includes(search.toLowerCase()) ||
+    t.kontrak_sewa?.nomor_kontrak?.toLowerCase().includes(search.toLowerCase()) ||
+    t.periode?.toLowerCase().includes(search.toLowerCase())
   );
 
   const getStatusBadge = (status: string) => {
@@ -280,6 +284,22 @@ export default function TagihanPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-8 bg-rose-50 border border-rose-100 rounded-2xl flex flex-col items-center text-center gap-3">
+          <AlertCircle className="text-rose-500" size={32} />
+          <div>
+            <h3 className="text-lg font-bold text-rose-900">Gagal Memuat Data</h3>
+            <p className="text-rose-600/80 text-sm">{error}</p>
+          </div>
+          <button 
+            onClick={() => fetchTagihan()}
+            className="px-6 py-2 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-100"
+          >
+            Coba Lagi
+          </button>
         </div>
       )}
 

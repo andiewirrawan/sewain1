@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
-import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus, formatJam, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { 
   Download, 
@@ -845,7 +845,7 @@ export default function PengaturanPage() {
                     <td className="px-5 py-3">
                       <div className="text-slate-900 font-medium">{formatTanggal(log.created_at)}</div>
                       <div className="text-[10px] text-slate-400 font-mono" suppressHydrationWarning>
-                        {log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                        {formatJam(log.created_at)}
                       </div>
                     </td>
                     <td className="px-5 py-3">
@@ -1202,7 +1202,7 @@ export default function PengaturanPage() {
                         </div>
                         <div className="flex-1 pb-4">
                           <div className="text-[10px] text-slate-400 font-medium" suppressHydrationWarning>
-                            {formatTanggal(log.created_at)} {log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : ''}
+                            {formatTanggal(log.created_at)} {formatJam(log.created_at)}
                           </div>
                           <div className="font-bold text-slate-800 text-sm mt-0.5 uppercase tracking-wide">{log.aktivitas}</div>
                           <div className="flex items-center gap-2 mt-1.5">
@@ -1253,7 +1253,7 @@ export default function PengaturanPage() {
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Waktu</div>
-                  <div className="font-bold text-slate-800">{new Date(showLogDetail.created_at).toLocaleString('id-ID')}</div>
+                  <div className="font-bold text-slate-800">{formatDateTime(showLogDetail.created_at)}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">User</div>

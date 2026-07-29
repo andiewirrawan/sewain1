@@ -11,15 +11,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data: settings, error } = await supabase
       .from('pengaturan_aplikasi')
       .select('*')
-      .eq('id', 1)
-      .single();
+      .eq('id', 1);
 
     if (error) throw error;
 
-    return NextResponse.json(data || {});
+    const data = settings && settings.length > 0 ? settings[0] : {};
+    return NextResponse.json(data);
   } catch (error: any) {
     console.error('Error fetching settings:', error);
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -37,13 +37,14 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { nama_usaha, whatsapp_admin, mata_uang, zona_waktu } = body;
 
-    const { data: oldData } = await supabase
+    const { data: oldSettings } = await supabase
       .from('pengaturan_aplikasi')
       .select('*')
-      .eq('id', 1)
-      .single();
+      .eq('id', 1);
+    
+    const oldData = oldSettings && oldSettings.length > 0 ? oldSettings[0] : null;
 
-    const { data, error } = await supabase
+    const { data: updatedSettings, error } = await supabase
       .from('pengaturan_aplikasi')
       .update({
         nama_usaha,
@@ -53,10 +54,10 @@ export async function PUT(req: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', 1)
-      .select()
-      .single();
+      .select();
 
     if (error) throw error;
+    const data = updatedSettings && updatedSettings.length > 0 ? updatedSettings[0] : null;
 
     await catatAuditLog(user, 'UPDATE', 'pengaturan_aplikasi', '1', oldData, data);
 
