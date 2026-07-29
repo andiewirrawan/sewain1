@@ -1,18 +1,24 @@
-import { defineConfig } from "eslint/config";
-import next from "eslint-config-next";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-export default [
-  // ...next (Wait, eslint/config with next might need different syntax)
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/immutability": "off",
-      "@next/next/no-html-link-for-pages": "off"
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@next/next/no-img-element": "off"
     }
   }
 ];
+
+export default eslintConfig;
