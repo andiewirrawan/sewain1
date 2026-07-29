@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
@@ -91,13 +91,12 @@ export default function PengaturanPage() {
       } else {
         fetchAllData();
       }
-    } catch (e) {
-      console.error('Error parsing user data:', e);
+    } catch {
       router.push('/login');
     }
-  }, [router]);
+  }, [router, fetchAllData]);
 
-  const fetchUnits = async () => {
+  const fetchUnits = useCallback(async () => {
     try {
       const res = await apiFetch('/api/unit?limit=1000'); // Get all for tarif list
       if (!res.ok) throw new Error('Gagal mengambil data unit');
@@ -107,9 +106,9 @@ export default function PengaturanPage() {
       console.error('Gagal mengambil data unit:', err);
       setError(err.message || 'Gagal memuat data unit');
     }
-  };
+  }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/users?page=${userPage}&limit=${userLimit}&search=${searchUser}&role=${filterRole}&status=${filterStatus}`);
       if (!res.ok) throw new Error('Gagal mengambil data users');
@@ -121,9 +120,9 @@ export default function PengaturanPage() {
       console.error('Gagal mengambil data users:', err);
       setError(err.message || 'Gagal memuat data users');
     }
-  };
+  }, [userPage, userLimit, searchUser, filterRole, filterStatus]);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/audit-log?page=${logPage}&limit=${logLimit}`);
       if (!res.ok) throw new Error('Gagal mengambil logs');
@@ -136,9 +135,9 @@ export default function PengaturanPage() {
       setError(err.message || 'Gagal memuat logs');
       setLogs([]);
     }
-  };
+  }, [logPage, logLimit]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const res = await apiFetch('/api/pengaturan/aplikasi');
       if (!res.ok) throw new Error('Gagal mengambil pengaturan aplikasi');
@@ -153,9 +152,9 @@ export default function PengaturanPage() {
     } catch (err: any) {
       console.error('Gagal mengambil pengaturan:', err);
     }
-  };
+  }, []);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -170,19 +169,19 @@ export default function PengaturanPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchUnits, fetchUsers, fetchLogs, fetchSettings]);
 
   useEffect(() => {
     if ((user?.role === 'Owner' || user?.role === 'System Owner')) {
       fetchUsers();
     }
-  }, [userPage, userLimit, searchUser, filterRole, filterStatus]);
+  }, [fetchUsers, user?.role]);
 
   useEffect(() => {
     if ((user?.role === 'Owner' || user?.role === 'System Owner')) {
       fetchLogs();
     }
-  }, [logPage, logLimit]);
+  }, [fetchLogs, user?.role]);
 
   useEffect(() => {
     setUserPage(1);
@@ -192,15 +191,7 @@ export default function PengaturanPage() {
     setLogPage(1);
   }, [logLimit]);
 
-  useEffect(() => {
-    if (viewingUser) {
-      fetchUserActivities(viewingUser.id);
-    } else {
-      setUserActivities([]);
-    }
-  }, [viewingUser]);
-
-  const fetchUserActivities = async (userId: string) => {
+  const fetchUserActivities = useCallback(async (userId: string) => {
     setLoadingActivities(true);
     try {
       const res = await apiFetch(`/api/audit-log?user_id=${userId}&page=1`);
@@ -211,7 +202,15 @@ export default function PengaturanPage() {
     } finally {
       setLoadingActivities(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (viewingUser) {
+      fetchUserActivities(viewingUser.id);
+    } else {
+      setUserActivities([]);
+    }
+  }, [viewingUser, fetchUserActivities]);
 
   const handleUpdateTarif = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,7 +229,7 @@ export default function PengaturanPage() {
         const errData = await res.json();
         alert(`Gagal memperbarui tarif: ${errData.message}`);
       }
-    } catch (err) {
+    } catch {
       alert('Gagal memperbarui tarif');
     }
   };
@@ -281,7 +280,7 @@ export default function PengaturanPage() {
         const errData = await res.json();
         alert(`Gagal memperbarui user: ${errData.message}`);
       }
-    } catch (err) {
+    } catch {
       alert('Gagal memperbarui user');
     }
   };
@@ -299,7 +298,7 @@ export default function PengaturanPage() {
         const errData = await res.json();
         alert(`Gagal mengubah status: ${errData.message}`);
       }
-    } catch (err) {
+    } catch {
       alert('Gagal mengubah status');
     }
   };
@@ -326,7 +325,7 @@ export default function PengaturanPage() {
         const errData = await res.json();
         alert(`Gagal menghapus user: ${errData.message}`);
       }
-    } catch (err) {
+    } catch {
       alert('Gagal menghapus user');
     }
   };
@@ -342,7 +341,7 @@ export default function PengaturanPage() {
       document.body.appendChild(a);
       a.click();
       a.remove();
-    } catch (err) {
+    } catch {
       alert('Gagal melakukan backup');
     }
   };
@@ -366,7 +365,7 @@ export default function PengaturanPage() {
         setResetConfirm('');
         fetchAllData();
       }
-    } catch (err) {
+    } catch {
       alert('Gagal meriset data');
     } finally {
       setIsResetting(false);
@@ -388,7 +387,7 @@ export default function PengaturanPage() {
         const errData = await res.json();
         alert(`Gagal menyimpan pengaturan: ${errData.message}`);
       }
-    } catch (err) {
+    } catch {
       alert('Gagal menyimpan pengaturan');
     } finally {
       setSavingSettings(false);
@@ -802,7 +801,7 @@ export default function PengaturanPage() {
             <p className="text-sm text-red-600/80 mb-6 font-medium">Reset akan menghapus seluruh data Unit, Penyewa, Kontrak, dan Pembayaran secara permanen.</p>
             
             <div className="space-y-3">
-              <label className="text-[10px] uppercase font-bold text-red-700 block tracking-widest">Ketik "HAPUS SEMUA DATA" untuk konfirmasi</label>
+              <label className="text-[10px] uppercase font-bold text-red-700 block tracking-widest">Ketik &quot;HAPUS SEMUA DATA&quot; untuk konfirmasi</label>
               <input 
                 type="text" 
                 placeholder="HAPUS SEMUA DATA"
@@ -973,7 +972,7 @@ export default function PengaturanPage() {
                 Data user ini akan dihapus permanen dari database. Tindakan ini tidak dapat dibatalkan!
               </p>
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500 block tracking-widest">Ketik "HAPUS PERMANEN" untuk konfirmasi</label>
+                <label className="text-[10px] uppercase font-bold text-slate-500 block tracking-widest">Ketik &quot;HAPUS PERMANEN&quot; untuk konfirmasi</label>
                 <input 
                   type="text" 
                   placeholder="HAPUS PERMANEN"

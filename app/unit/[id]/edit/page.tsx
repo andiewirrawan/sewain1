@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -23,11 +23,7 @@ export default function EditUnitPage() {
     status_unit: 'Kosong'
   });
 
-  useEffect(() => {
-    fetchUnit();
-  }, [id]);
-
-  const fetchUnit = async () => {
+  const fetchUnit = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/unit/${id}`);
       if (res.ok) {
@@ -46,7 +42,11 @@ export default function EditUnitPage() {
     } finally {
       setFetching(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchUnit();
+  }, [id, fetchUnit]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (e.target.name === 'harga_sewa') {

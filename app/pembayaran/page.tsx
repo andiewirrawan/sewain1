@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -49,11 +49,13 @@ export default function PembayaranPage() {
       try {
         const user = JSON.parse(storedUser);
         setUserRole(user.role);
-      } catch (e) {}
+      } catch {
+        // Ignore error
+      }
     }
   }, []);
 
-  const fetchPembayaran = async () => {
+  const fetchPembayaran = useCallback(async () => {
     setLoading(true);
     try {
       let url = `/api/pembayaran?tahun=${selectedYear}&page=${page}&limit=${limit}&search=${search}`;
@@ -71,7 +73,7 @@ export default function PembayaranPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear, page, limit, search, selectedMonth, selectedStatus]);
 
   useEffect(() => {
     setPage(1);
@@ -79,8 +81,7 @@ export default function PembayaranPage() {
 
   useEffect(() => {
     fetchPembayaran();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, selectedMonth, selectedYear, selectedStatus, search]);
+  }, [fetchPembayaran]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

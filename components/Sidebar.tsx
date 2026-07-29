@@ -60,21 +60,17 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(true);
-  const [user, setUser] = React.useState<{ nama: string; role: string; is_system_owner: boolean } | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUser = localStorage.getItem('user');
-        return storedUser ? JSON.parse(storedUser) : null;
-      } catch(e) { 
-        console.warn('localStorage not accessible', e);
-        return null; 
-      }
-    }
-    return null;
-  });
+  const [user, setUser] = React.useState<{ nama: string; role: string; is_system_owner: boolean } | null>(null);
 
   React.useEffect(() => {
-    // any other mount logic if needed, else remove
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (err) {
+      console.warn('localStorage not accessible', err);
+    }
   }, []);
 
   const handleLogout = () => {

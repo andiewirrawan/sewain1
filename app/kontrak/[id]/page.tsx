@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Building2, User, Calendar, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { formatTanggal, formatRupiah, formatStatus, safeValue } from '@/lib/format';
+import { ArrowLeft, Building2, User, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { formatTanggal, formatRupiah, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function DetailKontrakPage() {
@@ -14,13 +14,7 @@ export default function DetailKontrakPage() {
   const [kontrak, setKontrak] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      fetchDetail();
-    }
-  }, [id]);
-
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/kontrak/${id}`);
       const data = await res.json();
@@ -33,7 +27,13 @@ export default function DetailKontrakPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    if (id) {
+      fetchDetail();
+    }
+  }, [id, fetchDetail]);
 
   const updateStatus = async (status: string) => {
     const isConfirm = confirm(`Yakin ingin mengubah status kontrak menjadi ${status}?`);

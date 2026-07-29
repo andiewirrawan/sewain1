@@ -110,7 +110,7 @@ export async function exportToExcel({
   worksheet.views = [{ state: 'frozen', ySplit: headerRow.number }];
   
   // Basic auto-width (ExcelJS doesn't have a perfect one, but we can estimate)
-  worksheet.columns.forEach((column, i) => {
+  worksheet.columns.forEach((column) => {
     let maxLength = 0;
     column?.eachCell?.({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 10;

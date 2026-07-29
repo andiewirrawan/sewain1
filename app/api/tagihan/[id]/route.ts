@@ -61,7 +61,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ message: 'Tagihan berhasil di-write off' });
     }
 
-    const { jatuh_tempo, nominal_tagihan, nominal_diskon, total_tagihan } = body;
+    const { jatuh_tempo, nominal_tagihan, nominal_diskon } = body;
     const { data: oldData } = await supabaseAdmin.from('tagihan').select('*').eq('id_tagihan', id).single();
 
     const { data, error } = await supabaseAdmin

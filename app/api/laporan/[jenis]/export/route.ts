@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { getUserFromRequest } from '@/lib/auth';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 
@@ -17,7 +15,7 @@ export async function GET(
   
   if (format === 'excel') {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Laporan');
+    workbook.addWorksheet('Laporan');
     // ... add data to worksheet ...
     const buffer = await workbook.xlsx.writeBuffer();
     return new NextResponse(buffer, {

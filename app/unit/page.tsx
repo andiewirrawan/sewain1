@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Trash2, Edit } from 'lucide-react';
@@ -19,20 +19,20 @@ export default function UnitPage() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [user, setUser] = useState<{ role: string } | null>(null);
 
-  const [user, setUser] = useState<{ role: string } | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUser = localStorage.getItem('user');
-        return storedUser ? JSON.parse(storedUser) : null;
-      } catch(e) { 
-        return null; 
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
+    } catch (e) {
+      console.error('Error parsing user from localStorage:', e);
     }
-    return null;
-  });
+  }, []);
 
-  const fetchUnits = async () => {
+  const fetchUnits = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiFetch(`/api/unit?jenis_unit=${jenisUnit}&status_unit=${status}&page=${page}&limit=${limit}&search=${search}`);
@@ -45,7 +45,7 @@ export default function UnitPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [jenisUnit, status, page, limit, search]);
 
   useEffect(() => {
     setPage(1); // Reset to page 1 on filter/search change
@@ -53,8 +53,7 @@ export default function UnitPage() {
 
   useEffect(() => {
     fetchUnits();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, jenisUnit, status, search]);
+  }, [fetchUnits]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

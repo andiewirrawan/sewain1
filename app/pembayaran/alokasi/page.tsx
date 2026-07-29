@@ -11,32 +11,10 @@ export default function AlokasiPembayaranPage() {
   const [alokasi, setAlokasi] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setUserRole(user.role);
-        
-        if (user.role !== 'Owner' && user.role !== 'System Owner') {
-          router.push('/dashboard');
-        } else {
-          setIsReady(true);
-          fetchAlokasi();
-        }
-      } catch (e) {
-        router.push('/dashboard');
-      }
-    } else {
-      router.push('/login');
-    }
-  }, [router]);
-
-  const fetchAlokasi = async () => {
+  const fetchAlokasi = useCallback(async () => {
     try {
       const data = await apiFetch('/api/pembayaran/alokasi');
       setAlokasi(data);
@@ -45,7 +23,27 @@ export default function AlokasiPembayaranPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        
+        if (user.role !== 'Owner' && user.role !== 'System Owner') {
+          router.push('/dashboard');
+        } else {
+          setIsReady(true);
+          fetchAlokasi();
+        }
+      } catch {
+        router.push('/dashboard');
+      }
+    } else {
+      router.push('/login');
+    }
+  }, [router, fetchAlokasi]);
 
   const filteredAlokasi = alokasi.filter(item => 
     item.penyewa?.toLowerCase().includes(searchTerm.toLowerCase()) ||

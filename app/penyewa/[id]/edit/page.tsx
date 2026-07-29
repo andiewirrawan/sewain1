@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
 export default function EditPenyewaPage() {
   const router = useRouter();
-  const params = useParams();
-  const { id } = params;
+  const { id } = useParams();
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -21,13 +20,7 @@ export default function EditPenyewaPage() {
     jenis_usaha: ''
   });
 
-  useEffect(() => {
-    if (id) {
-      fetchPenyewa();
-    }
-  }, [id]);
-
-  const fetchPenyewa = async () => {
+  const fetchPenyewa = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/penyewa/${id}`);
       if (!res.ok) throw new Error('Data tidak ditemukan');
@@ -47,7 +40,13 @@ export default function EditPenyewaPage() {
     } finally {
       setFetching(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    if (id) {
+      fetchPenyewa();
+    }
+  }, [id, fetchPenyewa]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

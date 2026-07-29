@@ -47,7 +47,7 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
       const data = await response.clone().json();
       if (data.message) message = data.message;
       else if (data.error) message = data.error;
-    } catch (e) {
+    } catch {
       // Ignore parse error
     }
     throw new Error(message);

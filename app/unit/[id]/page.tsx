@@ -1,22 +1,21 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Building2, User, History, Receipt, BarChart, AlertCircle, Clock } from 'lucide-react';
-import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 
 export default function DetailUnitPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params?.id as string;
   const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [riwayat, setRiwayat] = useState<any>(null);
 
-  const fetchUnit = async () => {
+  const fetchUnit = useCallback(async () => {
     try {
       const [resUnit, resRiwayat] = await Promise.all([
         apiFetch(`/api/unit/${id}`),
@@ -36,12 +35,11 @@ export default function DetailUnitPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchUnit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, fetchUnit]);
 
   if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
   if (!unit) return <div className="p-8 text-center text-red-500">Unit tidak ditemukan</div>;

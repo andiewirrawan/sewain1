@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, User, Phone, FileText, Briefcase, MapPin, Ticket, Wallet } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export default function DetailPenyewaPage() {
@@ -14,16 +14,9 @@ export default function DetailPenyewaPage() {
   
   const [penyewa, setPenyewa] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (id) {
-      fetchDetail();
-    }
-  }, [id]);
-
   const [riwayat, setRiwayat] = useState<any>(null);
 
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
     try {
       const [resPenyewa, resRiwayat] = await Promise.all([
         apiFetch(`/api/penyewa/${id}`),
@@ -46,7 +39,13 @@ export default function DetailPenyewaPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, router]);
+
+  useEffect(() => {
+    if (id) {
+      fetchDetail();
+    }
+  }, [id, fetchDetail]);
 
   if (loading) {
     return <div className="p-4 text-center">Memuat detail penyewa...</div>;

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { formatTanggal, formatRupiah, safeValue } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 import { exportToExcel } from '@/lib/excel';
@@ -39,7 +39,6 @@ export default function LaporanPage() {
   const [bulan, setBulan] = useState('');
   const [tahun, setTahun] = useState(new Date().getFullYear().toString());
   const [data, setData] = useState<any[] | null>(null);
-  const [rawJson, setRawJson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +53,7 @@ export default function LaporanPage() {
     if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
-  const fetchLaporan = async () => {
+  const fetchLaporan = useCallback(async () => {
     setLoading(true);
     setError(null);
     setData(null);
@@ -83,11 +82,9 @@ export default function LaporanPage() {
         setTotalPages(1);
       }
       
-      setRawJson(reportData);
-      
       // Flatten relations for display
       const flattenedData = reportData.map(item => {
-          let flat: any = { ...item };
+          const flat: any = { ...item };
           const display: any = {};
 
           // Helper to get safe name and unit
@@ -165,7 +162,7 @@ export default function LaporanPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bulan, tahun, page, limit, jenis]);
 
   useEffect(() => { 
     setPage(1); 
@@ -173,7 +170,7 @@ export default function LaporanPage() {
 
   useEffect(() => { 
     fetchLaporan(); 
-  }, [jenis, bulan, tahun, page, limit]);
+  }, [fetchLaporan]);
 
   const handleExportExcel = async () => {
     setLoading(true);
@@ -190,9 +187,9 @@ export default function LaporanPage() {
       const dateStr = new Date().toISOString().split('T')[0];
       const periodStr = bulan ? `${bulan}-${tahun}` : tahun;
       
-      let excelHeaders: any[] = [];
-      let excelData = exportJson.map((item: any) => {
-        let flat: any = { ...item };
+      const excelHeaders: any[] = [];
+      const excelData = exportJson.map((item: any) => {
+        const flat: any = { ...item };
         if (typeof flat.unit === 'object' && flat.unit !== null) flat.unit = flat.unit.kode_unit;
         if (typeof flat.penyewa === 'object' && flat.penyewa !== null) {
           flat.whatsapp = flat.penyewa.whatsapp;

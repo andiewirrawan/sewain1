@@ -6,16 +6,12 @@ import { apiFetch } from '@/lib/api';
 import { 
   ArrowLeft, 
   CreditCard, 
-  Calendar, 
   User, 
   Building2, 
   FileText, 
-  CheckCircle2, 
-  AlertCircle,
-  Clock,
   Printer
 } from 'lucide-react';
-import { formatRupiah, formatTanggal, formatStatus, safeValue } from '@/lib/format';
+import { formatRupiah, formatTanggal, formatStatus } from '@/lib/format';
 
 export default function PembayaranDetail() {
   const router = useRouter();
@@ -23,22 +19,22 @@ export default function PembayaranDetail() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDetail = async () => {
-      try {
-        const res = await apiFetch(`/api/pembayaran/${params.id}`);
-        if (!res.ok) throw new Error('Gagal mengambil detail pembayaran');
-        const json = await res.json();
-        setData(json);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (params.id) fetchDetail();
+  const fetchDetail = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/api/pembayaran/${params.id}`);
+      if (!res.ok) throw new Error('Gagal mengambil detail pembayaran');
+      const json = await res.json();
+      setData(json);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }, [params.id]);
+
+  useEffect(() => {
+    if (params.id) fetchDetail();
+  }, [params.id, fetchDetail]);
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat detail...</div>;
   if (!data) return <div className="p-8 text-center text-red-500">Data tidak ditemukan</div>;

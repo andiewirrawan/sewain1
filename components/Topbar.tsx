@@ -4,18 +4,18 @@ import React from 'react';
 import { Bell, Search, User } from 'lucide-react';
 
 export default function Topbar() {
-  const [user, setUser] = React.useState<{ nama: string; role: string } | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUser = localStorage.getItem('user');
-        return storedUser ? JSON.parse(storedUser) : null;
-      } catch(e) { 
-        console.warn('localStorage not accessible', e);
-        return null; 
+  const [user, setUser] = React.useState<{ nama: string; role: string } | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
+    } catch (err) {
+      console.warn('localStorage not accessible', err);
     }
-    return null;
-  });
+  }, []);
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Users, Building2, Wallet, AlertCircle, CalendarDays, Percent, BarChart3, ReceiptText } from 'lucide-react';
+import { Users, Building2, Wallet, AlertCircle, ReceiptText } from 'lucide-react';
 import { formatRupiah } from '@/lib/format';
 
 export default function DashboardPage() {
@@ -101,8 +101,8 @@ export default function DashboardPage() {
                       "8-30 Hari": "#f43f5e", // Rose-500
                       ">30 Hari": "#be123c"   // Rose-700
                     };
-                    // @ts-ignore
-                    const fill = colors[entry.name] || '#94a3b8';
+                    // @ts-expect-error - entry.name is a string but colors has specific keys
+                    const fill = colors[entry.name as keyof typeof colors] || '#94a3b8';
                     return <Cell key={`cell-${index}`} fill={fill} />;
                   })}
                 </Bar>

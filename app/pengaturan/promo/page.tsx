@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { formatRupiah, formatTanggal } from '@/lib/format';
@@ -9,9 +9,6 @@ import {
   Plus, 
   Search, 
   Filter, 
-  ChevronLeft, 
-  ChevronRight, 
-  MoreVertical, 
   Edit2, 
   Trash2, 
   Eye,
@@ -21,12 +18,13 @@ import {
   Users,
   Calendar,
   X,
-  Check
+  Check,
+  History
 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 
 export default function PromoPage() {
-  const [user, setUser] = useState<any>(null);
+  const [, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [promos, setPromos] = useState<any[]>([]);
   const [penyewaList, setPenyewaList] = useState<any[]>([]);
@@ -58,6 +56,30 @@ export default function PromoPage() {
 
   const [searchPenyewa, setSearchPenyewa] = useState('');
 
+  const fetchPromos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch(`/api/promo?page=${page}&limit=${limit}&search=${search}&status=${filterStatus}`);
+      const data = await res.json();
+      setPromos(data.data || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      console.error('Error fetching promos:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit, search, filterStatus]);
+
+  const fetchPenyewa = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/penyewa?limit=1000');
+      const data = await res.json();
+      setPenyewaList(data.data || []);
+    } catch (err) {
+      console.error('Error fetching penyewa:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
@@ -74,31 +96,7 @@ export default function PromoPage() {
 
     fetchPromos();
     fetchPenyewa();
-  }, [page, search, filterStatus]);
-
-  const fetchPromos = async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch(`/api/promo?page=${page}&limit=${limit}&search=${search}&status=${filterStatus}`);
-      const data = await res.json();
-      setPromos(data.data || []);
-      setTotal(data.total || 0);
-    } catch (err) {
-      console.error('Error fetching promos:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPenyewa = async () => {
-    try {
-      const res = await apiFetch('/api/penyewa?limit=1000');
-      const data = await res.json();
-      setPenyewaList(data.data || []);
-    } catch (err) {
-      console.error('Error fetching penyewa:', err);
-    }
-  };
+  }, [router, fetchPromos, fetchPenyewa]);
 
   const handleCreatePromo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,10 +110,10 @@ export default function PromoPage() {
         resetForm();
         fetchPromos();
       } else {
-        const err = await res.json();
-        alert(err.message || 'Gagal membuat promo');
+        const errData = await res.json();
+        alert(errData.message || 'Gagal membuat promo');
       }
-    } catch (err) {
+    } catch {
       alert('Terjadi kesalahan');
     }
   };
@@ -132,10 +130,10 @@ export default function PromoPage() {
         resetForm();
         fetchPromos();
       } else {
-        const err = await res.json();
-        alert(err.message || 'Gagal update promo');
+        const errData = await res.json();
+        alert(errData.message || 'Gagal update promo');
       }
-    } catch (err) {
+    } catch {
       alert('Terjadi kesalahan');
     }
   };
@@ -150,7 +148,7 @@ export default function PromoPage() {
         setDeleteConfirm(null);
         fetchPromos();
       }
-    } catch (err) {
+    } catch {
       alert('Gagal menghapus');
     }
   };
@@ -165,7 +163,7 @@ export default function PromoPage() {
       if (res.ok) {
         fetchPromos();
       }
-    } catch (err) {
+    } catch {
       alert('Gagal mengubah status');
     }
   };
@@ -720,7 +718,7 @@ export default function PromoPage() {
               </div>
               <h3 className="text-2xl font-bold text-slate-900">Nonaktifkan Promo?</h3>
               <p className="text-slate-500 leading-relaxed">
-                Anda akan menonaktifkan promo <span className="font-bold text-slate-900">"{deleteConfirm.nama_promo}"</span>. 
+                Anda akan menonaktifkan promo <span className="font-bold text-slate-900">&quot;{deleteConfirm.nama_promo}&quot;</span>. 
                 Penyewa yang terdaftar tidak akan lagi mendapatkan diskon ini. Histori penggunaan tetap tersimpan.
               </p>
               <div className="flex gap-3 pt-4">
