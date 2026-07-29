@@ -14,7 +14,8 @@ export async function PUT(
   const { id } = await params;
   const body = await request.json();
 
-  const { data: oldData } = await supabase.from('users').select('*').eq('id', id).single();
+  const { data: users } = await supabase.from('users').select('*').eq('id', id);
+  const oldData = users && users.length > 0 ? users[0] : null;
   if (!oldData) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
   const { status, password, role, nama } = body;
@@ -92,7 +93,8 @@ export async function DELETE(
     return NextResponse.json({ message: 'Anda tidak dapat menghapus diri sendiri' }, { status: 400 });
   }
 
-  const { data: targetUser } = await supabase.from('users').select('*').eq('id', id).single();
+  const { data: targetUsers } = await supabase.from('users').select('*').eq('id', id);
+  const targetUser = targetUsers && targetUsers.length > 0 ? targetUsers[0] : null;
   if (!targetUser) return NextResponse.json({ message: 'User tidak ditemukan' }, { status: 404 });
 
   if (targetUser.is_system_owner) {

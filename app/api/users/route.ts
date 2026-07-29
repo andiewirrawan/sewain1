@@ -80,13 +80,12 @@ export async function POST(request: Request) {
     }
 
     // Check duplicate email
-    const { data: existingUser, error: checkError } = await supabase
+    const { data: users, error: checkError } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email)
-      .single();
+      .eq('email', email);
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "Not Found" in Supabase
+    if (checkError) {
       console.error("Check email error:", checkError);
       return NextResponse.json({ 
         message: 'Gagal mengecek email', 
@@ -94,7 +93,7 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    if (existingUser) {
+    if (users && users.length > 0) {
       return NextResponse.json({ message: 'Email sudah digunakan.' }, { status: 409 });
     }
 
@@ -110,7 +109,7 @@ export async function POST(request: Request) {
 
     console.log("Executing Supabase insert into users:", insertData);
 
-    const { data, error } = await supabase.from('users').insert(insertData).select().single();
+    const { data: insertedUsers, error } = await supabase.from('users').insert(insertData).select();
     
     if (error) {
       console.error("Supabase insert error details:", {
@@ -129,6 +128,11 @@ export async function POST(request: Request) {
         hint: error.hint,
         code: error.code
       }, { status: 500 });
+    }
+
+    const data = insertedUsers && insertedUsers.length > 0 ? insertedUsers[0] : null;
+    if (!data) {
+       return NextResponse.json({ message: 'Gagal mendapatkan data user setelah insert' }, { status: 500 });
     }
     
     await catatAuditLog(user, 'CREATE_USER', 'users', data.id, null, { nama, email, role });

@@ -19,40 +19,48 @@ export async function POST(req: NextRequest) {
     await bootstrapSystem();
 
     // Ambil user dari database
-    const { data: user, error } = await supabase
+    const { data: users, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
-      .eq('status', 'Aktif')
-      .single();
+      .eq('status', 'Aktif');
 
     if (error) {
-      console.log('Supabase error searching user:', error.message);
+      console.error('DATABASE ERROR:', error.message);
+      return NextResponse.json({ message: 'Database error' }, { status: 500 });
     }
 
+    const userCount = users ? users.length : 0;
+    console.log(`USER SEARCH RESULT: Found ${userCount} active user(s) for email ${email}`);
+
+    const user = users && users.length > 0 ? users[0] : null;
+
     if (!user) {
-      console.log('Failure: User not found or inactive');
+      console.log('FAILURE: User not found or not active (status must be "Aktif")');
       return NextResponse.json({ message: 'User tidak ditemukan atau tidak aktif' }, { status: 401 });
     }
 
-    console.log('User found:', user.email);
-    console.log('User status:', user.status);
-    console.log('User role:', user.role);
+    console.log('USER DATA FROM DB:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      has_password: !!user.password
+    });
 
     const dbPassword = user.password;
-    console.log('DB Password Hash exists:', !!dbPassword);
-
     if (!dbPassword) {
-      console.log('Failure: Password column missing or empty in database');
-      return NextResponse.json({ message: 'Password column missing or empty in database' }, { status: 500 });
+      console.error('FAILURE: Password column is empty for user', user.email);
+      return NextResponse.json({ message: 'Data password tidak ditemukan di database' }, { status: 500 });
     }
 
     // Cek password
+    console.log('Verifying password with bcrypt...');
     const isPasswordValid = await bcrypt.compare(password, dbPassword);
-    console.log('bcrypt.compare result:', isPasswordValid);
+    console.log('BCRYPT COMPARE RESULT:', isPasswordValid);
 
     if (!isPasswordValid) {
-      console.log('Failure: Incorrect password');
+      console.log('FAILURE: Password mismatch for email', email);
       return NextResponse.json({ message: 'Password salah' }, { status: 401 });
     }
 

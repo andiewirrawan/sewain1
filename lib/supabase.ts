@@ -1,22 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-let _supabase: any;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-export const supabase = new Proxy({} as any, {
-  get: (target, prop) => {
-    if (!_supabase) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-      if (!supabaseUrl || !supabaseServiceKey || supabaseUrl === 'your-supabase-url' || supabaseServiceKey === 'your-supabase-service-role-key') {
-        // Log error but don't throw during build to allow Vercel to pass
-        console.error('Supabase configuration is missing or invalid. Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Secrets.');
-        return () => {
-          throw new Error('Supabase configuration is missing! Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Environment Variables.');
-        };
-      }
-      _supabase = createClient(supabaseUrl, supabaseServiceKey);
-    }
-    return _supabase ? _supabase[prop] : undefined;
-  }
-});
+// Instance tunggal Supabase client
+// Menggunakan Service Role Key karena digunakan di API route untuk akses penuh
+export const supabase = createClient(supabaseUrl, supabaseServiceKey);
