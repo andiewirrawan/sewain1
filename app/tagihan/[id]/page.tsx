@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft, 
   Receipt, 
   Calendar, 
   User, 
   Home,
-  CheckCircle2,
-  Clock,
   AlertCircle,
   CreditCard,
   MessageCircle,
@@ -29,20 +27,16 @@ export default function TagihanDetailPage() {
 
   const [waLogs, setWaLogs] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchDetail();
-    try { const u = JSON.parse(localStorage.getItem('user') || '{}'); setUserRole(u.role); } catch(e) {}
-    fetchWaLogs();
-  }, [id]);
-
-  const fetchWaLogs = async () => {
+  const fetchWaLogs = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/tagihan/wa-log?id_penyewa=${data?.kontrak_sewa?.penyewa?.id_penyewa}`);
       if (res.ok) setWaLogs(await res.json());
-    } catch (err) {}
-  };
+    } catch {
+      // Ignore error
+    }
+  }, [data?.kontrak_sewa?.penyewa?.id_penyewa]);
 
-  const fetchDetail = async () => {
+  const fetchDetail = useCallback(async () => {
     try {
       setLoading(true);
       const res = await apiFetch(`/api/tagihan/${id}`);
@@ -60,7 +54,18 @@ export default function TagihanDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchDetail();
+    try { 
+      const u = JSON.parse(localStorage.getItem('user') || '{}'); 
+      setUserRole(u.role); 
+    } catch {
+      // Ignore error
+    }
+    fetchWaLogs();
+  }, [id, fetchDetail, fetchWaLogs]);
 
   const handleSendWA = async () => {
     try {
@@ -97,7 +102,12 @@ export default function TagihanDetailPage() {
       });
       if (!res.ok) throw new Error('Gagal memperbarui status');
       fetchDetail();
-    try { const u = JSON.parse(localStorage.getItem('user') || '{}'); setUserRole(u.role); } catch(e) {}
+    try { 
+      const u = JSON.parse(localStorage.getItem('user') || '{}'); 
+      setUserRole(u.role); 
+    } catch {
+      // Ignore error
+    }
     } catch (err: any) {
       alert(err.message);
     }

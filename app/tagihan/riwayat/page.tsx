@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowLeft, 
   History,
-  Calendar,
-  User,
   CheckCircle2,
   FileText
 } from 'lucide-react';
@@ -20,9 +18,9 @@ export default function RiwayatGeneratePage() {
 
   useEffect(() => {
     fetchRiwayat();
-  }, []);
+  }, [fetchRiwayat]);
 
-  const fetchRiwayat = async () => {
+  const fetchRiwayat = useCallback(async () => {
     try {
       setLoading(true);
       const res = await apiFetch('/api/tagihan/riwayat');
@@ -33,7 +31,7 @@ export default function RiwayatGeneratePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -57,11 +55,12 @@ export default function RiwayatGeneratePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                <tr className="bg-slate-50/50 text-slate-500 text-[10px] uppercase tracking-widest font-black">
                   <th className="px-6 py-4">Waktu Generate</th>
-                  <th className="px-6 py-4">Periode</th>
+                  <th className="px-6 py-4 text-center">Periode</th>
                   <th className="px-6 py-4">Oleh</th>
-                  <th className="px-6 py-4">Jumlah Tagihan</th>
+                  <th className="px-6 py-4 text-center">Berhasil</th>
+                  <th className="px-6 py-4 text-center">Skip</th>
                   <th className="px-6 py-4 text-right">Total Nominal</th>
                   <th className="px-6 py-4 text-center">Status</th>
                 </tr>
@@ -70,37 +69,40 @@ export default function RiwayatGeneratePage() {
                 {loading ? (
                   Array(5).fill(0).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={6} className="px-6 py-4"><div className="h-8 bg-slate-100 rounded w-full"></div></td>
+                      <td colSpan={7} className="px-6 py-4"><div className="h-8 bg-slate-100 rounded w-full"></div></td>
                     </tr>
                   ))
                 ) : riwayat.length > 0 ? (
                   riwayat.map((r: any) => (
-                    <tr key={r.id_generate} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={r.id_generate} className="hover:bg-slate-50/50 transition-colors text-sm">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-900">{formatTanggal(r.tanggal_generate)}</div>
+                        <div className="font-bold text-slate-900">{formatTanggal(r.tanggal_generate)}</div>
                         <div className="text-[10px] text-slate-400 font-bold uppercase">{new Date(r.tanggal_generate).toLocaleTimeString()}</div>
                       </td>
-                      <td className="px-6 py-4 font-bold text-blue-600">
-                        {r.periode}
+                      <td className="px-6 py-4 text-center">
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg font-black text-[10px] uppercase">{r.periode}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                          <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                             {r.users?.nama?.[0]}
                           </div>
-                          <span className="text-sm font-medium text-slate-700">{r.users?.nama}</span>
+                          <span className="font-bold text-slate-700 truncate max-w-[120px]">{r.users?.nama}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-bold text-slate-900">
-                        {r.jumlah_tagihan} Data
+                      <td className="px-6 py-4 text-center font-bold text-emerald-600">
+                        {r.jumlah_tagihan}
                       </td>
-                      <td className="px-6 py-4 text-right font-bold text-slate-900">
+                      <td className="px-6 py-4 text-center font-bold text-amber-600">
+                        {r.jumlah_skip || 0}
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-slate-900">
                         {formatRupiah(r.total_nominal)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-center">
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                            <CheckCircle2 size={12} /> {r.status}
+                          <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 border border-emerald-100">
+                            <CheckCircle2 size={10} /> {r.status}
                           </span>
                         </div>
                       </td>
@@ -108,7 +110,7 @@ export default function RiwayatGeneratePage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
                         <FileText size={48} className="text-slate-200" />
                         <p>Belum ada riwayat generate</p>

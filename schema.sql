@@ -161,6 +161,7 @@ CREATE TABLE riwayat_generate_tagihan (
     tanggal_generate TIMESTAMP WITH TIME ZONE DEFAULT now(),
     id_user UUID REFERENCES users(id) ON DELETE SET NULL,
     jumlah_tagihan INTEGER DEFAULT 0,
+    jumlah_skip INTEGER DEFAULT 0,
     total_nominal NUMERIC(15,2) DEFAULT 0,
     status TEXT DEFAULT 'Selesai'
 );
@@ -230,6 +231,7 @@ SET search_path = public
 AS $$
 DECLARE
     v_count INTEGER := 0;
+    v_skip INTEGER := 0;
     v_total NUMERIC(15,2) := 0;
     v_kontrak RECORD;
     v_id_tagihan UUID;
@@ -260,6 +262,7 @@ BEGIN
         WHERE k.status_kontrak = 'Aktif'
     LOOP
         IF EXISTS (SELECT 1 FROM tagihan WHERE id_kontrak = v_kontrak.id_kontrak AND periode = p_periode) THEN
+            v_skip := v_skip + 1;
             CONTINUE;
         END IF;
 
@@ -332,12 +335,57 @@ BEGIN
         END IF;
     END LOOP;
 
-    INSERT INTO riwayat_generate_tagihan (periode, id_user, jumlah_tagihan, total_nominal, status)
-    VALUES (p_periode, p_user_id, v_count, v_total, 'Selesai');
+    INSERT INTO riwayat_generate_tagihan (periode, id_user, jumlah_tagihan, jumlah_skip, total_nominal, status)
+    VALUES (p_periode, p_user_id, v_count, v_skip, v_total, 'Selesai');
 
-    RETURN jsonb_build_object('success', true, 'count', v_count, 'total', v_total);
+    RETURN jsonb_build_object('success', true, 'count', v_count, 'skip', v_skip, 'total', v_total);
 EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object('success', false, 'message', SQLERRM);
+END;
+$$;
+
+-- Function: get_generate_preview
+CREATE OR REPLACE FUNCTION get_generate_preview(p_periode TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    v_total_aktif INTEGER;
+    v_tagihan_baru INTEGER;
+    v_skip INTEGER;
+    v_total_nominal NUMERIC(15,2);
+BEGIN
+    -- 1. Hitung Kontrak Aktif
+    SELECT COUNT(*) INTO v_total_aktif 
+    FROM kontrak_sewa 
+    WHERE status_kontrak = 'Aktif';
+
+    -- 2. Hitung yang sudah ada tagihannya (Skip)
+    SELECT COUNT(*) INTO v_skip
+    FROM kontrak_sewa k
+    WHERE k.status_kontrak = 'Aktif'
+    AND EXISTS (SELECT 1 FROM tagihan t WHERE t.id_kontrak = k.id_kontrak AND t.periode = p_periode);
+
+    -- 3. Hitung yang belum ada tagihannya (Baru)
+    v_tagihan_baru := v_total_aktif - v_skip;
+
+    -- 4. Hitung Estimasi Nominal (Base Price dari unit)
+    -- Catatan: Estimasi ini belum menghitung promo karena promo dihitung saat generate real
+    -- Namun untuk preview, base price sudah cukup memberikan gambaran
+    SELECT COALESCE(SUM(u.harga_sewa), 0) INTO v_total_nominal
+    FROM kontrak_sewa k
+    JOIN unit u ON k.id_unit = u.id_unit
+    WHERE k.status_kontrak = 'Aktif'
+    AND NOT EXISTS (SELECT 1 FROM tagihan t WHERE t.id_kontrak = k.id_kontrak AND t.periode = p_periode);
+
+    RETURN jsonb_build_object(
+        'total_aktif', v_total_aktif,
+        'tagihan_baru', v_tagihan_baru,
+        'skip', v_skip,
+        'total_nominal', v_total_nominal
+    );
 END;
 $$;
 

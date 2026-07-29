@@ -9,10 +9,22 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { periode, jatuh_tempo } = body;
+    const { periode, jatuh_tempo, preview } = body;
 
-    if (!periode || !jatuh_tempo) {
-      return NextResponse.json({ message: 'Periode dan Tanggal Jatuh Tempo wajib diisi' }, { status: 400 });
+    if (!periode) {
+      return NextResponse.json({ message: 'Periode wajib diisi' }, { status: 400 });
+    }
+
+    if (preview) {
+      const { data: stats, error: statsError } = await supabaseAdmin.rpc('get_generate_preview', {
+        p_periode: periode
+      });
+      if (statsError) throw statsError;
+      return NextResponse.json(stats);
+    }
+
+    if (!jatuh_tempo) {
+      return NextResponse.json({ message: 'Tanggal Jatuh Tempo wajib diisi' }, { status: 400 });
     }
 
     // Call PostgreSQL Function (RPC) for safe, transactional generation
