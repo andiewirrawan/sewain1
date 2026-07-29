@@ -42,10 +42,6 @@ export default function TagihanPage() {
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i);
 
-  useEffect(() => {
-    fetchTagihan();
-  }, [fetchTagihan]);
-
   const fetchPreview = useCallback(async () => {
     try {
       const periode = `${genPeriode.bulan}-${genPeriode.tahun}`;
@@ -59,6 +55,30 @@ export default function TagihanPage() {
       console.error('Gagal fetch preview:', err);
     }
   }, [genPeriode.bulan, genPeriode.tahun]);
+
+  const fetchTagihan = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      let url = '/api/tagihan';
+      if (statusFilter !== 'Semua') {
+        url += `?status=${statusFilter}`;
+      }
+      const res = await apiFetch(url);
+      if (!res.ok) throw new Error('Gagal mengambil data tagihan');
+      const data = await res.json();
+      setTagihan(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Terjadi kesalahan saat memuat tagihan');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchTagihan();
+  }, [fetchTagihan]);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -105,7 +125,11 @@ export default function TagihanPage() {
     
     const totalPiutang = penyewaTagihan.reduce((acc: number, curr: any) => acc + (curr.total_tagihan - curr.terbayar), 0);
     
-    const waUrl = generateWhatsAppTagihan(t.kontrak_sewa?.penyewa, penyewaTagihan);
+    if (!t.kontrak_sewa?.penyewa) {
+      alert('Data penyewa tidak ditemukan');
+      return;
+    }
+    const waUrl = generateWhatsAppTagihan(t.kontrak_sewa.penyewa, penyewaTagihan);
     if (waUrl) {
       window.open(waUrl, '_blank');
       
@@ -127,26 +151,6 @@ export default function TagihanPage() {
       alert('Tidak ada tagihan tertunggak untuk penyewa ini.');
     }
   };
-
-  const fetchTagihan = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      let url = '/api/tagihan';
-      if (statusFilter !== 'Semua') {
-        url += `?status=${statusFilter}`;
-      }
-      const res = await apiFetch(url);
-      if (!res.ok) throw new Error('Gagal mengambil data tagihan');
-      const data = await res.json();
-      setTagihan(data);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Terjadi kesalahan saat memuat tagihan');
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter]);
 
   const filteredTagihan = tagihan.filter((t: any) => 
     t.kontrak_sewa?.penyewa?.nama?.toLowerCase().includes(search.toLowerCase()) ||

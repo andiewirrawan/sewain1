@@ -1145,7 +1145,7 @@ export default function PengaturanPage() {
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-100">
-                  {viewingUser.nama.charAt(0).toUpperCase()}
+                  {viewingUser.nama?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">{viewingUser.nama}</h3>
