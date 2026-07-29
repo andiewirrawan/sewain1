@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/auth';
+import { bootstrapSystem } from '@/lib/bootstrap';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest) {
       console.log('Failure: Missing email or password');
       return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
     }
+
+    // Jalankan bootstrap otomatis jika diperlukan
+    await bootstrapSystem();
 
     // Ambil user dari database
     const { data: user, error } = await supabase

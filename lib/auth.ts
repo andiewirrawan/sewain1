@@ -8,7 +8,7 @@ export interface UserPayload {
   id: string;
   nama: string;
   email: string;
-  role: 'Owner' | 'Admin';
+  role: string;
   is_system_owner: boolean;
 }
 
