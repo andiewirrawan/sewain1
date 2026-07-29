@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     console.log('User status:', user.status);
     console.log('User role:', user.role);
 
-    const dbPassword = user.password || user.password_hash;
+    const dbPassword = user.password;
     console.log('DB Password Hash exists:', !!dbPassword);
 
     if (!dbPassword) {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate JWT
-    const userId = user.id || user.id_user;
+    const userId = user.id;
     console.log('User ID for JWT:', userId);
     
     const token = await generateToken({

@@ -46,8 +46,7 @@ export async function bootstrapSystem() {
         password: hashedPassword,
         role: 'System Owner',
         status: 'Aktif',
-        is_system_owner: true,
-        no_telp: '08123456789'
+        is_system_owner: true
       });
 
     if (insertError) {

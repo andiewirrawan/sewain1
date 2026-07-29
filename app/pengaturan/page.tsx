@@ -634,14 +634,13 @@ export default function PengaturanPage() {
                   <th className="px-5 py-3 text-left">Role</th>
                   <th className="px-5 py-3 text-left">Status</th>
                   <th className="px-5 py-3 text-left">Informasi</th>
-                  <th className="px-5 py-3 text-left">Login Terakhir</th>
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
+                    <td colSpan={5} className="px-5 py-8 text-center text-slate-400 italic">
                       Tidak ada user yang ditemukan.
                     </td>
                   </tr>
@@ -673,11 +672,6 @@ export default function PengaturanPage() {
                         {u.created_at ? formatTanggal(u.created_at) : '-'}
                         <div className="font-bold uppercase text-slate-400 mt-1 mb-0.5">Dibuat Oleh:</div>
                         {u.created_by || '-'}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="text-slate-600 font-medium" suppressHydrationWarning>
-                        {u.last_login ? new Date(u.last_login).toLocaleString('id-ID') : '-'}
                       </div>
                     </td>
                     <td className="px-5 py-3 text-right">
@@ -1173,10 +1167,6 @@ export default function PengaturanPage() {
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</div>
                   <div>{formatStatus(viewingUser.status)}</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Terakhir Login</div>
-                  <div className="text-slate-700 font-medium">{viewingUser.last_login ? new Date(viewingUser.last_login).toLocaleString('id-ID') : '-'}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dibuat Pada</div>

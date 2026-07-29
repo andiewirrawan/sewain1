@@ -22,7 +22,8 @@ async function seedUsers() {
       email: 'owner@sewain.com',
       password: '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', // password123
       role: 'Owner',
-      status: 'Aktif'
+      status: 'Aktif',
+      is_system_owner: false
     },
     {
       id: '22222222-2222-2222-2222-222222222222',
@@ -30,7 +31,8 @@ async function seedUsers() {
       email: 'admin@sewain.com',
       password: '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', // password123
       role: 'Admin',
-      status: 'Aktif'
+      status: 'Aktif',
+      is_system_owner: false
     },
     {
       id: '33333333-3333-3333-3333-333333333333',
@@ -38,7 +40,8 @@ async function seedUsers() {
       email: 'system@sewain.com',
       password: '$2a$10$7vN3gW.Y5YvLdJpE7uJ80e3qB9/u1B9G8zM8G4a9uY9cZ0vE6s7qS', // password123
       role: 'System Owner',
-      status: 'Aktif'
+      status: 'Aktif',
+      is_system_owner: true
     }
   ];
 
