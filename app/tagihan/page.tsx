@@ -50,6 +50,7 @@ export default function TagihanPage() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
+    console.log('Deleting tagihan with ID:', id);
     if (!window.confirm('Apakah Anda yakin ingin menghapus tagihan ini?')) return;
 
     try {
@@ -273,11 +274,14 @@ export default function TagihanPage() {
                           </Link>
                           {t.status_tagihan === 'Belum Bayar' && (!t.alokasi_pembayaran || t.alokasi_pembayaran.length === 0) && (
                             <button 
-                              onClick={(e) => handleDelete(t.id_tagihan, e)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(t.id_tagihan, e);
+                              }}
                               title="Hapus Tagihan"
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={18} className="pointer-events-none" />
                             </button>
                           )}
                         </div>
