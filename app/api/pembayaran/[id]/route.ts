@@ -17,58 +17,39 @@ export async function GET(
     console.log("========== DETAIL PEMBAYARAN ==========");
     console.log("ID:", id);
 
-    // 1. Fetch pembayaran
-    const { data: pData, error: pembayaranError } = await supabase
+    // 1. Fetch pembayaran with all related data
+    const { data: pembayaran, error: pembayaranError } = await supabase
       .from('pembayaran')
-      .select('*')
-      .eq('id_pembayaran', id);
+      .select(`
+        *,
+        tagihan (
+          id_kontrak,
+          kontrak_sewa (
+            *,
+            penyewa (*),
+            unit (*)
+          )
+        )
+      `)
+      .eq('id_pembayaran', id)
+      .single();
 
     if (pembayaranError) {
       console.error("Error fetching pembayaran:", pembayaranError);
       return NextResponse.json({ message: pembayaranError.message }, { status: 500 });
     }
 
-    if (!pData || pData.length === 0) {
+    if (!pembayaran) {
       console.error("Pembayaran tidak ditemukan untuk ID:", id);
       return NextResponse.json({ message: 'Pembayaran tidak ditemukan' }, { status: 404 });
     }
 
-    const pembayaran = pData[0];
     console.log("Pembayaran:", pembayaran);
 
-    // 2. Fetch kontrak
-    const { data: kontrak, error: kontrakError } = await supabase
-      .from('kontrak_sewa')
-      .select('*')
-      .eq('id_kontrak', pembayaran.id_kontrak)
-      .single();
-
-    if (kontrakError) console.error("Error fetching kontrak:", kontrakError);
-    console.log("Kontrak:", kontrak);
-
-    // 3. Fetch unit & penyewa (if kontrak exists)
-    let unit = null;
-    let penyewa = null;
-
-    if (kontrak) {
-        const { data: uData, error: unitError } = await supabase.from('unit').select('*').eq('id_unit', kontrak.id_unit).single();
-        unit = uData;
-        if (unitError) console.error("Error fetching unit:", unitError);
-        console.log("Unit:", unit);
-
-        const { data: pData, error: penyewaError } = await supabase.from('penyewa').select('*').eq('id_penyewa', kontrak.id_penyewa).single();
-        penyewa = pData;
-        if (penyewaError) console.error("Error fetching penyewa:", penyewaError);
-        console.log("Penyewa:", penyewa);
-    }
-
+    // Construct response to match frontend expectation
     const response = {
       ...pembayaran,
-      kontrak_sewa: kontrak ? {
-          ...kontrak,
-          unit,
-          penyewa
-      } : null
+      kontrak_sewa: pembayaran.tagihan?.kontrak_sewa || null
     };
     
     console.log("Response:", response);
