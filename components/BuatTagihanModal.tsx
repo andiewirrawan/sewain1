@@ -8,7 +8,7 @@ import { formatRupiah } from '@/lib/format';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  kontrakId: string;
+  kontrakId?: string;
   onSuccess?: () => void;
 }
 
@@ -17,6 +17,8 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedKontrakId, setSelectedKontrakId] = useState<string>(kontrakId || '');
+  const [activeKontraks, setActiveKontraks] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     bulan: String(new Date().getMonth() + 1).padStart(2, '0'),
     tahun: String(new Date().getFullYear()),
@@ -32,12 +34,30 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
 
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() + i - 1);
 
+  const fetchActiveKontraks = async () => {
+    try {
+      const res = await apiFetch('/api/kontrak?status=Aktif');
+      const data = await res.json();
+      setActiveKontraks(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && !kontrakId) {
+      fetchActiveKontraks();
+    }
+    if (kontrakId) setSelectedKontrakId(kontrakId);
+  }, [isOpen, kontrakId]);
+
   const fetchPreview = React.useCallback(async () => {
+    if (!selectedKontrakId) return;
     try {
       setLoading(true);
       setError(null);
       const periode = `${formData.bulan}-${formData.tahun}`;
-      const res = await apiFetch(`/api/tagihan/preview-single?id_kontrak=${kontrakId}&periode=${periode}`);
+      const res = await apiFetch(`/api/tagihan/preview-single?id_kontrak=${selectedKontrakId}&periode=${periode}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Gagal memuat preview');
       
@@ -48,17 +68,19 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
     } finally {
       setLoading(false);
     }
-  }, [kontrakId, formData.bulan, formData.tahun]);
+  }, [selectedKontrakId, formData.bulan, formData.tahun]);
 
   useEffect(() => {
-    if (isOpen && kontrakId) {
+    if (isOpen && selectedKontrakId) {
       fetchPreview();
+    } else {
+      setPreview(null);
     }
-  }, [isOpen, kontrakId, fetchPreview]);
+  }, [isOpen, selectedKontrakId, fetchPreview]);
 
   const handleSubmit = async () => {
-    if (!formData.jatuh_tempo) {
-      alert('Tanggal jatuh tempo wajib diisi');
+    if (!formData.jatuh_tempo || !selectedKontrakId) {
+      alert('Data belum lengkap');
       return;
     }
 
@@ -67,7 +89,7 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
       const res = await apiFetch('/api/tagihan/generate-single', {
         method: 'POST',
         body: JSON.stringify({
-          id_kontrak: kontrakId,
+          id_kontrak: selectedKontrakId,
           periode: `${formData.bulan}-${formData.tahun}`,
           jatuh_tempo: formData.jatuh_tempo,
           nominal_tagihan: preview.nominal_tagihan,
@@ -80,7 +102,7 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Gagal membuat tagihan');
 
-      alert('Berhasil membuat tagihan');
+      alert('Tagihan berhasil dibuat.');
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
@@ -103,6 +125,23 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
         </div>
 
         <div className="p-6 space-y-6">
+          {!kontrakId && (
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Pilih Kontrak Aktif</label>
+              <select 
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none"
+                value={selectedKontrakId}
+                onChange={(e) => setSelectedKontrakId(e.target.value)}
+              >
+                <option value="">-- Pilih Kontrak --</option>
+                {activeKontraks.map(k => (
+                  <option key={k.id_kontrak} value={k.id_kontrak}>
+                    {k.penyewa.nama} - {k.unit.kode_unit}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">Bulan</label>
@@ -125,7 +164,6 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
               </select>
             </div>
           </div>
-
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">Tanggal Jatuh Tempo</label>
             <input 
@@ -135,7 +173,6 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
               onChange={(e) => setFormData({...formData, jatuh_tempo: e.target.value})}
             />
           </div>
-
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <RefreshCw className="animate-spin text-blue-600" size={24} />
@@ -171,7 +208,6 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
                   <span className="text-lg font-black text-blue-700">{formatRupiah(preview.total_tagihan)}</span>
                 </div>
               </div>
-
               {preview.is_existing && (
                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3 text-amber-800">
                   <AlertCircle size={20} className="shrink-0" />
@@ -181,7 +217,6 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
             </div>
           ) : null}
         </div>
-
         <div className="p-6 border-t border-slate-100 bg-slate-50/30 flex gap-3">
           <button 
             onClick={onClose}

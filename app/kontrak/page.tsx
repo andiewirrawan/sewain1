@@ -232,6 +232,7 @@ export default function KontrakPage() {
             setSelectedKontrakId(null);
           }}
           kontrakId={selectedKontrakId}
+          onSuccess={fetchKontrak}
         />
       )}
     </div>

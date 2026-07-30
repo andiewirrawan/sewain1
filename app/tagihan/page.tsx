@@ -10,12 +10,14 @@ import {
   CheckCircle2,
   Clock,
   History,
-  Trash2
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
 import { generateWhatsAppTagihan } from '@/lib/whatsapp';
+import BuatTagihanModal from '@/components/BuatTagihanModal';
 
 export default function TagihanPage() {
   const [tagihan, setTagihan] = useState([]);
@@ -23,6 +25,7 @@ export default function TagihanPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
+  const [isBuatModalOpen, setIsBuatModalOpen] = useState(false);
 
   const fetchTagihan = useCallback(async () => {
     try {
@@ -133,6 +136,13 @@ export default function TagihanPage() {
           <p className="text-slate-500">Kelola tagihan dan penagihan sewa unit</p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <button 
+            onClick={() => setIsBuatModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+          >
+            <Plus size={18} />
+            Buat Tagihan
+          </button>
           <Link 
             href="/tagihan/riwayat"
             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm"
@@ -303,6 +313,11 @@ export default function TagihanPage() {
           </table>
         </div>
       </div>
+    <BuatTagihanModal 
+        isOpen={isBuatModalOpen}
+        onClose={() => setIsBuatModalOpen(false)}
+        onSuccess={fetchTagihan}
+      />
     </div>
   );
 }
