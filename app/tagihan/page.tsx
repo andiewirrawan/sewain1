@@ -9,7 +9,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  History
+  History,
+  Trash2
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
@@ -46,6 +47,22 @@ export default function TagihanPage() {
   useEffect(() => {
     fetchTagihan();
   }, [fetchTagihan]);
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!window.confirm('Apakah Anda yakin ingin menghapus tagihan ini?')) return;
+
+    try {
+      const res = await apiFetch(`/api/tagihan/${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+      
+      alert('Tagihan berhasil dihapus');
+      fetchTagihan();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   const handleSendWA = async (t: any) => {
     // Cari semua tagihan penyewa ini yang belum lunas
@@ -254,6 +271,15 @@ export default function TagihanPage() {
                           >
                             <MoreVertical size={18} />
                           </Link>
+                          {t.status_tagihan === 'Belum Bayar' && (!t.alokasi_pembayaran || t.alokasi_pembayaran.length === 0) && (
+                            <button 
+                              onClick={(e) => handleDelete(t.id_tagihan, e)}
+                              title="Hapus Tagihan"
+                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
