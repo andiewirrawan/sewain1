@@ -42,9 +42,9 @@ export function formatDateTime(dateString: string | null | undefined): string {
   return date.toLocaleString('id-ID');
 }
 
-export function formatStatus(status: string | null | undefined) {
-  if (!status) return <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">-</span>;
-  const s = status.toLowerCase();
+export function formatStatus(status: string | null | undefined | number) {
+  if (status === null || status === undefined) return <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">-</span>;
+  const s = String(status).toLowerCase();
   let bg = 'bg-slate-100';
   let text = 'text-slate-600';
 
@@ -81,6 +81,6 @@ export function formatStatus(status: string | null | undefined) {
   }
 
   const isDibatalkan = s === 'dibatalkan';
-  return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${bg} ${text} ${isDibatalkan ? 'line-through opacity-50' : ''}`}>{status}</span>;
+  return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${bg} ${text} ${isDibatalkan ? 'line-through opacity-50' : ''}`}>{String(status)}</span>;
 }
 
