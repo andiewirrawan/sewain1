@@ -22,13 +22,10 @@ export async function GET(
       .from('pembayaran')
       .select(`
         *,
-        tagihan (
-          id_kontrak,
-          kontrak_sewa (
-            *,
-            penyewa (*),
-            unit (*)
-          )
+        kontrak_sewa (
+          *,
+          penyewa (*),
+          unit (*)
         )
       `)
       .eq('id_pembayaran', id)
@@ -36,7 +33,7 @@ export async function GET(
 
     if (pembayaranError) {
       console.error("Error fetching pembayaran:", pembayaranError);
-      return NextResponse.json({ message: pembayaranError.message }, { status: 500 });
+      return NextResponse.json({ message: 'Pembayaran tidak ditemukan' }, { status: 404 });
     }
 
     if (!pembayaran) {
@@ -49,7 +46,7 @@ export async function GET(
     // Construct response to match frontend expectation
     const response = {
       ...pembayaran,
-      kontrak_sewa: pembayaran.tagihan?.kontrak_sewa || null
+      kontrak_sewa: pembayaran.kontrak_sewa || null
     };
     
     console.log("Response:", response);
