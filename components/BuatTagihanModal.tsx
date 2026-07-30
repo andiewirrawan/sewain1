@@ -38,7 +38,7 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
     try {
       const res = await apiFetch('/api/kontrak?status=Aktif');
       const data = await res.json();
-      setActiveKontraks(data);
+      setActiveKontraks(data.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -92,10 +92,10 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
           id_kontrak: selectedKontrakId,
           periode: `${formData.bulan}-${formData.tahun}`,
           jatuh_tempo: formData.jatuh_tempo,
-          nominal_tagihan: preview.nominal_tagihan,
-          id_promo: preview.promo?.id_promo,
-          nominal_diskon: preview.nominal_diskon,
-          total_tagihan: preview.total_tagihan
+          nominal_tagihan: preview?.nominal_tagihan || 0,
+          id_promo: preview?.promo?.id_promo,
+          nominal_diskon: preview?.nominal_diskon || 0,
+          total_tagihan: preview?.total_tagihan || 0
         })
       });
 
@@ -187,25 +187,25 @@ export default function BuatTagihanModal({ isOpen, onClose, kontrakId, onSuccess
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 text-sm">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Penyewa</span>
-                  <span className="font-bold text-slate-900">{preview.kontrak.penyewa.nama}</span>
+                  <span className="font-bold text-slate-900">{preview?.kontrak?.penyewa?.nama}</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                   <span className="text-slate-500">Unit</span>
-                  <span className="font-bold text-blue-600">{preview.kontrak.unit.kode_unit}</span>
+                  <span className="font-bold text-blue-600">{preview?.kontrak?.unit?.kode_unit}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Harga Sewa</span>
-                  <span className="font-bold text-slate-900">{formatRupiah(preview.nominal_tagihan)}</span>
+                  <span className="font-bold text-slate-900">{formatRupiah(preview?.nominal_tagihan || 0)}</span>
                 </div>
-                {preview.promo && (
+                {preview?.promo && (
                   <div className="flex justify-between items-center text-emerald-600 font-medium">
                     <span>Promo: {preview.promo.nama_promo}</span>
-                    <span>- {formatRupiah(preview.nominal_diskon)}</span>
+                    <span>- {formatRupiah(preview.nominal_diskon || 0)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                   <span className="text-base font-bold text-slate-900">Total Tagihan</span>
-                  <span className="text-lg font-black text-blue-700">{formatRupiah(preview.total_tagihan)}</span>
+                  <span className="text-lg font-black text-blue-700">{formatRupiah(preview?.total_tagihan || 0)}</span>
                 </div>
               </div>
               {preview.is_existing && (
