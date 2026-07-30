@@ -3,14 +3,14 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 import { getUserFromRequest, requireRole } from '@/lib/auth';
 import { catatAuditLog } from '@/lib/audit';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(request as any);
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Get promo detail and list of assigned tenants
     const { data: promo, error: promoError } = await supabase
@@ -66,14 +66,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(request as any);
     if (!user || !requireRole(user, ['Owner'])) {
       return NextResponse.json({ message: 'Akses ditolak' }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { nama_promo, jenis_diskon, nilai_diskon, tanggal_mulai, tanggal_selesai, status, deskripsi, id_penyewa_list, prioritas } = body;
 
@@ -121,14 +121,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(request as any);
     if (!user || !requireRole(user, ['Owner'])) {
       return NextResponse.json({ message: 'Akses ditolak' }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const { data: promo } = await supabase.from('promo').select('*').eq('id_promo', id).single();
 
     // Soft delete: change status to 'Tidak Aktif' instead of actual delete

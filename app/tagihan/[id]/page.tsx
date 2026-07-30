@@ -10,9 +10,11 @@ import {
   AlertCircle,
   CreditCard,
   MessageCircle,
-  Edit2
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
+import EditTagihanModal from '@/components/EditTagihanModal';
 import { apiFetch } from '@/lib/api';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { generateWhatsAppTagihan } from '@/lib/whatsapp';
@@ -26,6 +28,7 @@ export default function TagihanDetailPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const [waLogs, setWaLogs] = useState<any[]>([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchWaLogs = useCallback(async () => {
     try {
@@ -88,26 +91,16 @@ export default function TagihanDetailPage() {
     }
   };
 
-  const handleUpdateStatus = async (newStatus: string) => {
-    const confirmMsg = `Apakah Anda yakin ingin mengubah status tagihan ini menjadi ${newStatus}?`;
-    if (!window.confirm(confirmMsg)) return;
+  const handleDelete = async () => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus tagihan ini?')) return;
 
     try {
-      const res = await apiFetch(`/api/tagihan/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          status_tagihan: newStatus,
-          alasan_perubahan: `Status diubah menjadi ${newStatus} secara manual`
-        })
-      });
-      if (!res.ok) throw new Error('Gagal memperbarui status');
-      fetchDetail();
-    try { 
-      const u = JSON.parse(localStorage.getItem('user') || '{}'); 
-      setUserRole(u.role); 
-    } catch {
-      // Ignore error
-    }
+      const res = await apiFetch(`/api/tagihan/${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message);
+      
+      alert('Tagihan berhasil dihapus');
+      router.push('/tagihan');
     } catch (err: any) {
       alert(err.message);
     }
@@ -119,7 +112,8 @@ export default function TagihanDetailPage() {
   const sisa = data.total_tagihan - data.terbayar;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <>
+      <div className="max-w-4xl mx-auto space-y-6">
         <button 
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium"
@@ -261,29 +255,25 @@ export default function TagihanDetailPage() {
                   <MessageCircle size={18} />
                   Kirim WA Tagihan
                 </button>
-                <div className="grid grid-cols-2 gap-2">
-                  {userRole !== 'Admin' && (
+
+                {data.status_tagihan === 'Belum Bayar' && (!data.alokasi_pembayaran || data.alokasi_pembayaran.length === 0) && (
+                  <>
                     <button 
-                      onClick={() => handleUpdateStatus('Write Off')}
-                      className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all text-xs"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm"
                     >
-                      Write Off
+                      <Edit2 size={18} />
+                      Edit Tagihan
                     </button>
-                  )}
-                  <button 
-                    onClick={() => handleUpdateStatus('Dibatalkan')}
-                    className="flex items-center justify-center gap-2 bg-rose-50 text-rose-700 py-3 rounded-xl font-bold hover:bg-rose-100 transition-all text-xs"
-                  >
-                    Dibatalkan
-                  </button>
-                </div>
-                <button 
-                  onClick={() => router.push(`/tagihan/${id}/edit`)}
-                  className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm"
-                >
-                  <Edit2 size={18} />
-                  Koreksi Tagihan
-                </button>
+                    <button 
+                      onClick={handleDelete}
+                      className="w-full flex items-center justify-center gap-2 bg-rose-50 text-rose-700 py-3 rounded-xl font-bold hover:bg-rose-100 transition-all text-xs"
+                    >
+                      <Trash2 size={18} />
+                      Hapus Tagihan
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Deposit Info */}
@@ -331,5 +321,12 @@ export default function TagihanDetailPage() {
           </div>
         </div>
       </div>
+      <EditTagihanModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        tagihan={data}
+        onSuccess={fetchDetail}
+      />
+    </>
   );
 }

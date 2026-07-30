@@ -16,10 +16,6 @@ export default function RiwayatGeneratePage() {
   const [loading, setLoading] = useState(true);
   const [riwayat, setRiwayat] = useState([]);
 
-  useEffect(() => {
-    fetchRiwayat();
-  }, [fetchRiwayat]);
-
   const fetchRiwayat = useCallback(async () => {
     try {
       setLoading(true);
@@ -32,6 +28,10 @@ export default function RiwayatGeneratePage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchRiwayat();
+  }, [fetchRiwayat]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

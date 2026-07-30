@@ -13,7 +13,8 @@ import {
   Settings,
   PieChart,
   Receipt,
-  Tag
+  Tag,
+  History
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -38,8 +39,9 @@ const menuGroups = [
   {
     title: 'Keuangan',
     items: [
-      { name: 'Daftar Tagihan', href: '/tagihan', icon: Receipt },
-      { name: 'Input Pembayaran', href: '/pembayaran', icon: CreditCard },
+      { name: 'Daftar Piutang', href: '/tagihan', icon: Receipt },
+      { name: 'Riwayat Generate', href: '/tagihan/riwayat', icon: History },
+      { name: 'Pembayaran', href: '/pembayaran', icon: CreditCard },
     ]
   },
   {

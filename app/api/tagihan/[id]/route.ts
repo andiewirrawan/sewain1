@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { catatAuditLog } from '@/lib/audit';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(req);
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { data, error } = await supabaseAdmin
       .from('tagihan')
       .select(`
@@ -34,35 +34,34 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(req);
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
-    const body = await req.json();
-    const { status_tagihan, catatan, alasan_perubahan } = body;
+    const { id } = await params;
+    
+    // 1. Cek apakah ada pembayaran
+    const { data: alokasi } = await supabaseAdmin
+      .from('alokasi_pembayaran')
+      .select('id_alokasi')
+      .eq('id_tagihan', id);
 
-    // Handle Write Off specially via RPC
-    if (status_tagihan === 'Write Off') {
-      if (user.role === 'Admin') return NextResponse.json({ message: 'Unauthorized' }, { status: 403 });
-      const { data, error } = await supabaseAdmin.rpc('write_off_tagihan', {
-        p_id_tagihan: id,
-        p_id_user: user.id,
-        p_catatan: alasan_perubahan || catatan || 'Write off'
-      });
-
-      if (error) throw error;
-      const result = data as any;
-      if (!result.success) return NextResponse.json({ message: result.message }, { status: 400 });
-
-      return NextResponse.json({ message: 'Tagihan berhasil di-write off' });
+    if (alokasi && alokasi.length > 0) {
+      return NextResponse.json({ message: 'Tagihan tidak dapat diedit karena sudah memiliki pembayaran.' }, { status: 400 });
     }
 
-    const { jatuh_tempo, nominal_tagihan, nominal_diskon } = body;
-    const { data: oldData } = await supabaseAdmin.from('tagihan').select('*').eq('id_tagihan', id).single();
+    // 2. Cek status tagihan
+    const { data: oldData, error: fetchError } = await supabaseAdmin.from('tagihan').select('*').eq('id_tagihan', id).single();
+    if (fetchError) throw fetchError;
+    if (oldData.status_tagihan !== 'Belum Bayar') {
+      return NextResponse.json({ message: 'Tagihan hanya dapat diedit jika status "Belum Bayar".' }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const { jatuh_tempo, nominal_tagihan, nominal_diskon, catatan } = body;
 
     const { data, error } = await supabaseAdmin
       .from('tagihan')
@@ -70,9 +69,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         jatuh_tempo,
         nominal_tagihan,
         nominal_diskon,
-        // total_tagihan,
         total_tagihan: Math.max(0, nominal_tagihan - (nominal_diskon || 0)),
-        status_tagihan,
         catatan,
         updated_at: new Date().toISOString()
       })
@@ -82,7 +79,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     if (error) throw error;
 
-    await catatAuditLog(user, 'UPDATE_TAGIHAN', 'tagihan', id, oldData, { ...data, alasan_perubahan });
+    await catatAuditLog(user, 'UPDATE_TAGIHAN', 'tagihan', id, oldData, { ...data, alasan_perubahan: body.alasan_perubahan });
 
     return NextResponse.json(data);
   } catch (error: any) {
@@ -90,14 +87,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getUserFromRequest(req);
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     
     // Cek apakah sudah ada pembayaran
     const { data: alokasi } = await supabaseAdmin
@@ -105,8 +102,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       .select('id_alokasi')
       .eq('id_tagihan', id);
 
-    if (alokasi && alokasi.length > 0 && user.role !== 'System Owner') {
-      return NextResponse.json({ message: 'Tagihan yang sudah memiliki pembayaran tidak dapat dihapus kecuali oleh System Owner' }, { status: 400 });
+    if (alokasi && alokasi.length > 0) {
+      return NextResponse.json({ message: 'Tagihan tidak dapat dihapus karena sudah memiliki transaksi pembayaran.' }, { status: 400 });
     }
 
     const { data: oldData } = await supabaseAdmin.from('tagihan').select('*').eq('id_tagihan', id).single();

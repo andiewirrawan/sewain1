@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Building2, User, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Building2, User, Calendar, CheckCircle, XCircle, Receipt } from 'lucide-react';
 import { formatTanggal, formatRupiah, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
+import BuatTagihanModal from '@/components/BuatTagihanModal';
 
 export default function DetailKontrakPage() {
   const { id } = useParams();
@@ -13,8 +14,9 @@ export default function DetailKontrakPage() {
   
   const [kontrak, setKontrak] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isTagihanModalOpen, setIsTagihanModalOpen] = useState(false);
 
-  const fetchDetail = useCallback(async () => {
+  const fetchDetail = React.useCallback(async () => {
     try {
       const res = await apiFetch(`/api/kontrak/${id}`);
       const data = await res.json();
@@ -152,15 +154,22 @@ export default function DetailKontrakPage() {
         {kontrak.status_kontrak === 'Aktif' && (
           <div className="mt-8 pt-4 border-t flex flex-wrap gap-3">
             <button
+              onClick={() => setIsTagihanModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              Buat Tagihan Manual
+            </button>
+            <button
               onClick={() => updateStatus('Selesai')}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center px-4 py-2 border border-slate-200 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Akhiri Kontrak (Selesai Normal)
             </button>
             <button
               onClick={() => updateStatus('Diputus')}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+              className="inline-flex items-center px-4 py-2 border border-rose-200 rounded-md shadow-sm text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors"
             >
               <XCircle className="h-4 w-4 mr-2" />
               Putus Kontrak (Bermasalah)
@@ -206,6 +215,13 @@ export default function DetailKontrakPage() {
           </table>
         </div>
       </div>
+
+      <BuatTagihanModal 
+        isOpen={isTagihanModalOpen}
+        onClose={() => setIsTagihanModalOpen(false)}
+        kontrakId={id as string}
+        onSuccess={fetchDetail}
+      />
     </div>
   );
 }

@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Trash2, FileText, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, FileText, ChevronRight, Receipt } from 'lucide-react';
 import { formatTanggal, formatStatus } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
 import Pagination from '@/components/Pagination';
+import BuatTagihanModal from '@/components/BuatTagihanModal';
 
 export default function KontrakPage() {
   const router = useRouter();
@@ -19,6 +20,9 @@ export default function KontrakPage() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  const [selectedKontrakId, setSelectedKontrakId] = useState<string | null>(null);
+  const [isTagihanModalOpen, setIsTagihanModalOpen] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('role') || 'Admin';
@@ -177,7 +181,21 @@ export default function KontrakPage() {
                       {formatStatus(k.status_kontrak)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end items-center space-x-2">
+                        {k.status_kontrak === 'Aktif' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedKontrakId(k.id_kontrak);
+                              setIsTagihanModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100 transition-colors"
+                            title="Buat Tagihan"
+                          >
+                            <Receipt size={14} />
+                            <span className="text-xs font-bold">Buat Tagihan</span>
+                          </button>
+                        )}
                         {userRole === 'Owner' && (
                           <button
                             onClick={(e) => handleDelete(e, k.id_kontrak)}
@@ -205,6 +223,17 @@ export default function KontrakPage() {
           total={total}
         />
       </div>
+
+      {selectedKontrakId && (
+        <BuatTagihanModal 
+          isOpen={isTagihanModalOpen}
+          onClose={() => {
+            setIsTagihanModalOpen(false);
+            setSelectedKontrakId(null);
+          }}
+          kontrakId={selectedKontrakId}
+        />
+      )}
     </div>
   );
 }

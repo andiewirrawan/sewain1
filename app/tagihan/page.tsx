@@ -5,13 +5,11 @@ import {
   Search, 
   FileText, 
   MoreVertical, 
-  RefreshCw,
   MessageCircle,
   AlertCircle,
   CheckCircle2,
   Clock,
-  History,
-  X
+  History
 } from 'lucide-react';
 import { formatRupiah, formatTanggal } from '@/lib/format';
 import { apiFetch } from '@/lib/api';
@@ -24,37 +22,6 @@ export default function TagihanPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [previewData, setPreviewData] = useState<any>(null);
-  const [genPeriode, setGenPeriode] = useState({
-    bulan: String(new Date().getMonth() + 1).padStart(2, '0'),
-    tahun: String(new Date().getFullYear()),
-    jatuh_tempo: ''
-  });
-
-  const months = [
-    { v: '01', l: 'Januari' }, { v: '02', l: 'Februari' }, { v: '03', l: 'Maret' },
-    { v: '04', l: 'April' }, { v: '05', l: 'Mei' }, { v: '06', l: 'Juni' },
-    { v: '07', l: 'Juli' }, { v: '08', l: 'Agustus' }, { v: '09', l: 'September' },
-    { v: '10', l: 'Oktober' }, { v: '11', l: 'November' }, { v: '12', l: 'Desember' }
-  ];
-
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i);
-
-  const fetchPreview = useCallback(async () => {
-    try {
-      const periode = `${genPeriode.bulan}-${genPeriode.tahun}`;
-      const res = await apiFetch('/api/tagihan/generate', {
-        method: 'POST',
-        body: JSON.stringify({ periode, preview: true })
-      });
-      const data = await res.json();
-      setPreviewData(data);
-    } catch (err) {
-      console.error('Gagal fetch preview:', err);
-    }
-  }, [genPeriode.bulan, genPeriode.tahun]);
 
   const fetchTagihan = useCallback(async () => {
     try {
@@ -79,43 +46,6 @@ export default function TagihanPage() {
   useEffect(() => {
     fetchTagihan();
   }, [fetchTagihan]);
-
-  useEffect(() => {
-    if (isModalOpen) {
-      fetchPreview();
-    }
-  }, [isModalOpen, fetchPreview]);
-
-  const handleGenerate = async () => {
-    if (!genPeriode.jatuh_tempo) {
-      alert('Tentukan tanggal jatuh tempo!');
-      return;
-    }
-    try {
-      setModalLoading(true);
-      const periode = `${genPeriode.bulan}-${genPeriode.tahun}`;
-      const res = await apiFetch('/api/tagihan/generate', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          periode, 
-          jatuh_tempo: genPeriode.jatuh_tempo 
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        setIsModalOpen(false);
-        fetchTagihan();
-      } else {
-        alert(data.message || 'Gagal generate tagihan');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Terjadi kesalahan sistem');
-    } finally {
-      setModalLoading(false);
-    }
-  };
 
   const handleSendWA = async (t: any) => {
     // Cari semua tagihan penyewa ini yang belum lunas
@@ -181,7 +111,7 @@ export default function TagihanPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Daftar Tagihan</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Daftar Piutang</h1>
           <p className="text-slate-500">Kelola tagihan dan penagihan sewa unit</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -192,104 +122,8 @@ export default function TagihanPage() {
             <History size={18} />
             Riwayat Generate
           </Link>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
-          >
-            <RefreshCw size={18} />
-            Generate Piutang
-          </button>
         </div>
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="text-xl font-bold text-slate-900">Generate Piutang</h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Bulan</label>
-                  <select 
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none"
-                    value={genPeriode.bulan}
-                    onChange={(e) => setGenPeriode({...genPeriode, bulan: e.target.value})}
-                  >
-                    {months.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Tahun</label>
-                  <select 
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none"
-                    value={genPeriode.tahun}
-                    onChange={(e) => setGenPeriode({...genPeriode, tahun: e.target.value})}
-                  >
-                    {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Tanggal Jatuh Tempo</label>
-                <input 
-                  type="date"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none"
-                  value={genPeriode.jatuh_tempo}
-                  onChange={(e) => setGenPeriode({...genPeriode, jatuh_tempo: e.target.value})}
-                />
-              </div>
-
-              {previewData && (
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-3">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Preview Generate</h4>
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
-                    <div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase">Kontrak Aktif</p>
-                      <p className="text-lg font-black text-slate-900">{previewData.total_aktif}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase text-blue-600">Tagihan Baru</p>
-                      <p className="text-lg font-black text-blue-700">{previewData.tagihan_baru}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase text-amber-600">Skip (Sudah Ada)</p>
-                      <p className="text-lg font-black text-amber-700">{previewData.skip}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase text-emerald-600">Total Estimasi</p>
-                      <p className="text-lg font-black text-emerald-700">{formatRupiah(previewData.total_nominal)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-slate-100 bg-slate-50/30 flex gap-3">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleGenerate}
-                disabled={modalLoading || !previewData?.tagihan_baru}
-                className="flex-[2] py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {modalLoading ? <RefreshCw className="animate-spin" size={20} /> : <RefreshCw size={20} />}
-                Generate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {error && (
         <div className="p-8 bg-rose-50 border border-rose-100 rounded-2xl flex flex-col items-center text-center gap-3">
