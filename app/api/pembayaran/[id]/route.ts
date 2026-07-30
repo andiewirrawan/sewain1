@@ -26,6 +26,15 @@ export async function GET(
           *,
           penyewa (*),
           unit (*)
+        ),
+        alokasi_pembayaran (
+          tagihan (
+            kontrak_sewa (
+              *,
+              penyewa (*),
+              unit (*)
+            )
+          )
         )
       `)
       .eq('id_pembayaran', id)
@@ -44,9 +53,14 @@ export async function GET(
     console.log("Pembayaran:", pembayaran);
 
     // Construct response to match frontend expectation
+    const kontrak = pembayaran.kontrak_sewa || 
+                    (pembayaran.alokasi_pembayaran && pembayaran.alokasi_pembayaran.length > 0 
+                      ? pembayaran.alokasi_pembayaran[0].tagihan?.kontrak_sewa 
+                      : null);
+
     const response = {
       ...pembayaran,
-      kontrak_sewa: pembayaran.kontrak_sewa || null
+      kontrak_sewa: kontrak
     };
     
     console.log("Response:", response);
