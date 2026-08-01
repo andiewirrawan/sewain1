@@ -104,7 +104,7 @@ export default function PengaturanPage() {
       setUnits(data.data || []);
     } catch (err: any) {
       console.error('Gagal mengambil data unit:', err);
-      setError(err.message || 'Gagal memuat data unit');
+      throw err;
     }
   }, []);
 
@@ -118,7 +118,7 @@ export default function PengaturanPage() {
       setUserTotalPages(data.pagination?.total_pages || 0);
     } catch (err: any) {
       console.error('Gagal mengambil data users:', err);
-      setError(err.message || 'Gagal memuat data users');
+      throw err;
     }
   }, [userPage, userLimit, searchUser, filterRole, filterStatus]);
 
@@ -132,8 +132,8 @@ export default function PengaturanPage() {
       setLogTotalPages(data.pagination?.total_pages || 0);
     } catch (err: any) {
       console.error('Gagal mengambil logs:', err);
-      setError(err.message || 'Gagal memuat logs');
       setLogs([]);
+      throw err;
     }
   }, [logPage, logLimit]);
 
@@ -151,6 +151,7 @@ export default function PengaturanPage() {
       });
     } catch (err: any) {
       console.error('Gagal mengambil pengaturan:', err);
+      throw err;
     }
   }, []);
 
@@ -164,8 +165,9 @@ export default function PengaturanPage() {
         fetchLogs(),
         fetchSettings()
       ]);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching all data:', err);
+      setError(err.message || 'Gagal memuat data pengaturan. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -402,7 +404,7 @@ export default function PengaturanPage() {
     return <div className="p-8 text-center text-slate-500">Memuat data pengaturan...</div>;
   }
 
-  if (error && units.length === 0) {
+  if (error) {
     return (
       <div className="p-8 text-center">
         <div className="inline-flex p-4 bg-red-50 rounded-2xl border border-red-100 mb-4">
