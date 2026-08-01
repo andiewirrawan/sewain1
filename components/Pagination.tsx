@@ -21,13 +21,18 @@ export default function Pagination({
   onLimitChange,
   total 
 }: PaginationProps) {
-  if (total === 0) return null;
+  const current = Math.max(1, Number(currentPage) || 1);
+  const totalP = Math.max(0, Number(totalPages) || 0);
+  const tot = Math.max(0, Number(total) || 0);
+  const lim = Math.max(1, Number(limit) || 10);
+
+  if (tot === 0) return null;
 
   const pages = [];
   const maxVisiblePages = 5;
   
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-  const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  let startPage = Math.max(1, current - Math.floor(maxVisiblePages / 2));
+  const endPage = Math.min(totalP, startPage + maxVisiblePages - 1);
   
   if (endPage - startPage + 1 < maxVisiblePages) {
     startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -43,7 +48,7 @@ export default function Pagination({
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
           <select 
-            value={limit}
+            value={lim}
             onChange={(e) => onLimitChange(Number(e.target.value))}
             className="bg-white border border-slate-200 rounded px-2 py-1 text-xs focus:ring-2 focus:ring-blue-500 outline-none"
           >
@@ -54,14 +59,14 @@ export default function Pagination({
           </select>
         </div>
         <p className="text-xs text-slate-500">
-          Menampilkan <span className="font-semibold text-slate-700">{(currentPage - 1) * limit + 1}</span> - <span className="font-semibold text-slate-700">{Math.min(currentPage * limit, total)}</span> dari <span className="font-semibold text-slate-700">{total}</span> data
+          Menampilkan <span className="font-semibold text-slate-700">{(current - 1) * lim + 1}</span> - <span className="font-semibold text-slate-700">{Math.min(current * lim, tot)}</span> dari <span className="font-semibold text-slate-700">{tot}</span> data
         </p>
       </div>
 
       <div className="flex items-center gap-1 order-1 sm:order-2">
         <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          onClick={() => onPageChange(current - 1)}
+          disabled={current === 1}
           className="p-2 text-slate-400 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           title="Previous"
         >
@@ -72,7 +77,7 @@ export default function Pagination({
           <>
             <button
               onClick={() => onPageChange(1)}
-              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${currentPage === 1 ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${current === 1 ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               1
             </button>
@@ -84,27 +89,27 @@ export default function Pagination({
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`w-8 h-8 rounded text-xs font-medium transition-colors ${currentPage === page ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-8 h-8 rounded text-xs font-medium transition-colors ${current === page ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             {page}
           </button>
         ))}
 
-        {endPage < totalPages && (
+        {endPage < totalP && (
           <>
-            {endPage < totalPages - 1 && <span className="px-1 text-slate-400 text-xs">...</span>}
+            {endPage < totalP - 1 && <span className="px-1 text-slate-400 text-xs">...</span>}
             <button
-              onClick={() => onPageChange(totalPages)}
-              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${currentPage === totalPages ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              onClick={() => onPageChange(totalP)}
+              className={`w-8 h-8 rounded text-xs font-medium transition-colors ${current === totalP ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
-              {totalPages}
+              {totalP}
             </button>
           </>
         )}
 
         <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(current + 1)}
+          disabled={current === totalP || totalP === 0}
           className="p-2 text-slate-400 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           title="Next"
         >

@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
+
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { formatRupiah, formatTanggal, formatStatus, formatJam, formatDateTime } from '@/lib/format';
@@ -24,8 +25,9 @@ import {
   Info
 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-export default function PengaturanPage() {
+function PengaturanContent() {
   const [user, setUser] = useState<{ id: string; nama: string; role: string; is_system_owner: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,50 +77,33 @@ export default function PengaturanPage() {
   });
   const [savingSettings, setSavingSettings] = useState(false);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      
-      if (parsedUser?.role !== 'Owner' && parsedUser?.role !== 'System Owner') {
-        router.push('/dashboard');
-      } else {
-        fetchAllData();
-      }
-    } catch {
-      router.push('/login');
-    }
-  }, [router, fetchAllData]);
+  const isInitialMount = useRef(true);
 
   const fetchUnits = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/unit?limit=1000'); // Get all for tarif list
+      const res = await apiFetch('/api/unit?limit=1000');
       if (!res.ok) throw new Error('Gagal mengambil data unit');
       const data = await res.json();
-      setUnits(data.data || []);
+      setUnits(Array.isArray(data?.data) ? data.data : []);
     } catch (err: any) {
       console.error('Gagal mengambil data unit:', err);
-      throw err;
+      setUnits([]);
     }
   }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await apiFetch(`/api/users?page=${userPage}&limit=${userLimit}&search=${searchUser}&role=${filterRole}&status=${filterStatus}`);
+      const res = await apiFetch(`/api/users?page=${userPage}&limit=${userLimit}&search=${encodeURIComponent(searchUser)}&role=${encodeURIComponent(filterRole)}&status=${encodeURIComponent(filterStatus)}`);
       if (!res.ok) throw new Error('Gagal mengambil data users');
       const data = await res.json();
-      setUsers(data.data || []);
-      setUserTotal(data.pagination?.total || 0);
-      setUserTotalPages(data.pagination?.total_pages || 0);
+      setUsers(Array.isArray(data?.data) ? data.data : []);
+      setUserTotal(data?.pagination?.total || 0);
+      setUserTotalPages(data?.pagination?.total_pages || 0);
     } catch (err: any) {
       console.error('Gagal mengambil data users:', err);
-      throw err;
+      setUsers([]);
+      setUserTotal(0);
+      setUserTotalPages(0);
     }
   }, [userPage, userLimit, searchUser, filterRole, filterStatus]);
 
@@ -127,13 +112,14 @@ export default function PengaturanPage() {
       const res = await apiFetch(`/api/audit-log?page=${logPage}&limit=${logLimit}`);
       if (!res.ok) throw new Error('Gagal mengambil logs');
       const data = await res.json();
-      setLogs(data.data || []);
-      setLogCount(data.pagination?.total || 0);
-      setLogTotalPages(data.pagination?.total_pages || 0);
+      setLogs(Array.isArray(data?.data) ? data.data : []);
+      setLogCount(data?.pagination?.total || 0);
+      setLogTotalPages(data?.pagination?.total_pages || 0);
     } catch (err: any) {
       console.error('Gagal mengambil logs:', err);
       setLogs([]);
-      throw err;
+      setLogCount(0);
+      setLogTotalPages(0);
     }
   }, [logPage, logLimit]);
 
@@ -142,16 +128,22 @@ export default function PengaturanPage() {
       const res = await apiFetch('/api/pengaturan/aplikasi');
       if (!res.ok) throw new Error('Gagal mengambil pengaturan aplikasi');
       const data = await res.json();
-      setAppSettings(data);
+      setAppSettings(data || {});
       setEditSettings({
-        nama_usaha: data.nama_usaha || 'SEWAIN',
-        whatsapp_admin: data.whatsapp_admin || '',
-        mata_uang: data.mata_uang || 'IDR',
-        zona_waktu: data.zona_waktu || 'Asia/Jakarta'
+        nama_usaha: data?.nama_usaha || 'SEWAIN',
+        whatsapp_admin: data?.whatsapp_admin || '',
+        mata_uang: data?.mata_uang || 'IDR',
+        zona_waktu: data?.zona_waktu || 'Asia/Jakarta'
       });
     } catch (err: any) {
       console.error('Gagal mengambil pengaturan:', err);
-      throw err;
+      setAppSettings({ nama_usaha: 'SEWAIN', versi_aplikasi: '-', versi_schema: '-' });
+      setEditSettings({
+        nama_usaha: 'SEWAIN',
+        whatsapp_admin: '',
+        mata_uang: 'IDR',
+        zona_waktu: 'Asia/Jakarta'
+      });
     }
   }, []);
 
@@ -167,23 +159,54 @@ export default function PengaturanPage() {
       ]);
     } catch (err: any) {
       console.error('Error fetching all data:', err);
-      setError(err.message || 'Gagal memuat data pengaturan. Silakan coba lagi.');
+      setError(err?.message || 'Gagal memuat data pengaturan. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
   }, [fetchUnits, fetchUsers, fetchLogs, fetchSettings]);
 
+  // Auth & Initial load
   useEffect(() => {
-    if ((user?.role === 'Owner' || user?.role === 'System Owner')) {
+    if (typeof window === 'undefined') return;
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      if (!parsedUser || (parsedUser?.role !== 'Owner' && parsedUser?.role !== 'System Owner')) {
+        router.push('/dashboard');
+        return;
+      }
+      setUser(parsedUser);
+      fetchAllData();
+    } catch {
+      router.push('/login');
+    }
+  }, [router, fetchAllData]);
+
+  // Filter & Pagination changes for Users
+  useEffect(() => {
+    if (isInitialMount.current) {
+      return;
+    }
+    if (user?.role === 'Owner' || user?.role === 'System Owner') {
       fetchUsers();
     }
-  }, [fetchUsers, user?.role]);
+  }, [userPage, userLimit, searchUser, filterRole, filterStatus, fetchUsers, user?.role]);
 
+  // Pagination changes for Logs
   useEffect(() => {
-    if ((user?.role === 'Owner' || user?.role === 'System Owner')) {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (user?.role === 'Owner' || user?.role === 'System Owner') {
       fetchLogs();
     }
-  }, [fetchLogs, user?.role]);
+  }, [logPage, logLimit, fetchLogs, user?.role]);
 
   useEffect(() => {
     setUserPage(1);
@@ -194,20 +217,23 @@ export default function PengaturanPage() {
   }, [logLimit]);
 
   const fetchUserActivities = useCallback(async (userId: string) => {
+    if (!userId) return;
     setLoadingActivities(true);
     try {
       const res = await apiFetch(`/api/audit-log?user_id=${userId}&page=1`);
+      if (!res.ok) throw new Error('Gagal mengambil aktivitas');
       const data = await res.json();
-      setUserActivities(data.data || []);
+      setUserActivities(Array.isArray(data?.data) ? data.data : []);
     } catch (err) {
       console.error('Gagal mengambil riwayat aktivitas user:', err);
+      setUserActivities([]);
     } finally {
       setLoadingActivities(false);
     }
   }, []);
 
   useEffect(() => {
-    if (viewingUser) {
+    if (viewingUser?.id) {
       fetchUserActivities(viewingUser.id);
     } else {
       setUserActivities([]);
@@ -216,7 +242,7 @@ export default function PengaturanPage() {
 
   const handleUpdateTarif = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingTarif) return;
+    if (!editingTarif?.id_unit) return;
     
     try {
       const res = await apiFetch(`/api/pengaturan/tarif/${editingTarif.id_unit}`, {
@@ -228,8 +254,8 @@ export default function PengaturanPage() {
         setEditingTarif(null);
         fetchAllData();
       } else {
-        const errData = await res.json();
-        alert(`Gagal memperbarui tarif: ${errData.message}`);
+        const errData = await res.json().catch(() => ({}));
+        alert(`Gagal memperbarui tarif: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch {
       alert('Gagal memperbarui tarif');
@@ -251,17 +277,17 @@ export default function PengaturanPage() {
       } else {
         const errData = await res.json().catch(() => ({}));
         console.error("API error adding user:", errData);
-        alert(`Gagal menambahkan user: ${errData.message || 'Kesalahan Server'}`);
+        alert(`Gagal menambahkan user: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch (err: any) {
       console.error("Fetch error adding user:", err);
-      alert(`Gagal menambahkan user: ${err.message}`);
+      alert(`Gagal menambahkan user: ${err?.message || 'Kesalahan jaringan'}`);
     }
   };
 
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingUser) return;
+    if (!editingUser?.id) return;
     
     try {
       const res = await apiFetch(`/api/users/${editingUser.id}`, {
@@ -270,7 +296,7 @@ export default function PengaturanPage() {
           nama: editingUser.nama,
           role: editingUser.role,
           status: editingUser.status,
-          password: editingUser.password // Optional
+          password: editingUser.password
         })
       });
       
@@ -279,8 +305,8 @@ export default function PengaturanPage() {
         setEditingUser(null);
         fetchAllData();
       } else {
-        const errData = await res.json();
-        alert(`Gagal memperbarui user: ${errData.message}`);
+        const errData = await res.json().catch(() => ({}));
+        alert(`Gagal memperbarui user: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch {
       alert('Gagal memperbarui user');
@@ -288,6 +314,7 @@ export default function PengaturanPage() {
   };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
+    if (!id) return;
     const newStatus = currentStatus === 'Aktif' ? 'Nonaktif' : 'Aktif';
     try {
       const res = await apiFetch(`/api/users/${id}`, {
@@ -297,8 +324,8 @@ export default function PengaturanPage() {
       if (res.ok) {
         fetchAllData();
       } else {
-        const errData = await res.json();
-        alert(`Gagal mengubah status: ${errData.message}`);
+        const errData = await res.json().catch(() => ({}));
+        alert(`Gagal mengubah status: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch {
       alert('Gagal mengubah status');
@@ -306,7 +333,7 @@ export default function PengaturanPage() {
   };
 
   const handleDeleteUser = async () => {
-    if (!showDeleteConfirm) return;
+    if (!showDeleteConfirm?.id) return;
     const u = showDeleteConfirm;
     
     if (deleteConfirmText !== 'HAPUS PERMANEN') {
@@ -324,8 +351,8 @@ export default function PengaturanPage() {
         setDeleteConfirmText('');
         fetchAllData();
       } else {
-        const errData = await res.json();
-        alert(`Gagal menghapus user: ${errData.message}`);
+        const errData = await res.json().catch(() => ({}));
+        alert(`Gagal menghapus user: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch {
       alert('Gagal menghapus user');
@@ -335,6 +362,7 @@ export default function PengaturanPage() {
   const handleBackup = async () => {
     try {
       const res = await apiFetch('/api/pengaturan/backup');
+      if (!res.ok) throw new Error('Gagal ekspor data');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -366,6 +394,9 @@ export default function PengaturanPage() {
         alert('Seluruh data berhasil dihapus');
         setResetConfirm('');
         fetchAllData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Gagal meriset data: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch {
       alert('Gagal meriset data');
@@ -386,8 +417,8 @@ export default function PengaturanPage() {
         alert('Pengaturan umum berhasil disimpan');
         fetchSettings();
       } else {
-        const errData = await res.json();
-        alert(`Gagal menyimpan pengaturan: ${errData.message}`);
+        const errData = await res.json().catch(() => ({}));
+        alert(`Gagal menyimpan pengaturan: ${errData?.message || 'Kesalahan Server'}`);
       }
     } catch {
       alert('Gagal menyimpan pengaturan');
@@ -396,11 +427,11 @@ export default function PengaturanPage() {
     }
   };
 
-  if (!user || user.role !== 'Owner' && user.role !== 'System Owner') {
+  if (!user || (user.role !== 'Owner' && user.role !== 'System Owner')) {
     return <div className="p-8 text-center text-slate-500">Memverifikasi akses...</div>;
   }
 
-  if (loading && units.length === 0 && !error) {
+  if (loading && (units || []).length === 0 && !error) {
     return <div className="p-8 text-center text-slate-500">Memuat data pengaturan...</div>;
   }
 
@@ -479,8 +510,8 @@ export default function PengaturanPage() {
                 <label className="text-[10px] uppercase font-bold text-slate-400">Nama Usaha</label>
                 <input 
                   type="text"
-                  value={editSettings.nama_usaha}
-                  onChange={(e) => setEditSettings({...editSettings, nama_usaha: e.target.value})}
+                  value={editSettings?.nama_usaha || ''}
+                  onChange={(e) => setEditSettings({...(editSettings || {}), nama_usaha: e.target.value})}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -490,8 +521,8 @@ export default function PengaturanPage() {
                   <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                   <input 
                     type="text"
-                    value={editSettings.whatsapp_admin}
-                    onChange={(e) => setEditSettings({...editSettings, whatsapp_admin: e.target.value})}
+                    value={editSettings?.whatsapp_admin || ''}
+                    onChange={(e) => setEditSettings({...(editSettings || {}), whatsapp_admin: e.target.value})}
                     placeholder="628..."
                     className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -500,8 +531,8 @@ export default function PengaturanPage() {
               <div className="space-y-1">
                 <label className="text-[10px] uppercase font-bold text-slate-400">Mata Uang</label>
                 <select 
-                  value={editSettings.mata_uang}
-                  onChange={(e) => setEditSettings({...editSettings, mata_uang: e.target.value})}
+                  value={editSettings?.mata_uang || 'IDR'}
+                  onChange={(e) => setEditSettings({...(editSettings || {}), mata_uang: e.target.value})}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="IDR">IDR (Rupiah)</option>
@@ -513,8 +544,8 @@ export default function PengaturanPage() {
                 <div className="relative">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                   <select 
-                    value={editSettings.zona_waktu}
-                    onChange={(e) => setEditSettings({...editSettings, zona_waktu: e.target.value})}
+                    value={editSettings?.zona_waktu || 'Asia/Jakarta'}
+                    onChange={(e) => setEditSettings({...(editSettings || {}), zona_waktu: e.target.value})}
                     className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
@@ -558,17 +589,17 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {units.length === 0 ? (
+                {(units || []).length === 0 ? (
                   <tr>
                     <td colSpan={3} className="px-5 py-8 text-center text-slate-500">
                       Tidak ada data unit.
                     </td>
                   </tr>
-                ) : units.map((unit) => (
-                  <tr key={unit.id_unit} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3 font-medium text-slate-900">{unit.kode_unit}</td>
+                ) : (units || []).map((unit) => (
+                  <tr key={unit?.id_unit || unit?.kode_unit} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3 font-medium text-slate-900">{unit?.kode_unit || '-'}</td>
                     <td className="px-5 py-3 text-slate-600 font-bold">
-                      {formatRupiah(unit.harga_sewa)}
+                      {formatRupiah(unit?.harga_sewa)}
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button 
@@ -640,40 +671,40 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.length === 0 ? (
+                {(users || []).length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-8 text-center text-slate-400 italic">
                       Tidak ada user yang ditemukan.
                     </td>
                   </tr>
-                ) : users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                ) : (users || []).map((u) => (
+                  <tr key={u?.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3">
                       <button 
                         onClick={() => setViewingUser(u)}
                         className="text-left group"
                       >
-                        <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{u.nama}</div>
-                        <div className="text-xs text-slate-500">{u.email}</div>
+                        <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">{u?.nama || '-'}</div>
+                        <div className="text-xs text-slate-500">{u?.email || '-'}</div>
                       </button>
                     </td>
                     <td className="px-5 py-3">
                       <span className={cn(
                         "px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 w-fit",
-                        u.is_system_owner ? "bg-amber-100 text-amber-700" : u.role === 'Owner' ? "bg-purple-100 text-purple-600" : "bg-green-100 text-green-600"
+                        u?.is_system_owner ? "bg-amber-100 text-amber-700" : u?.role === 'Owner' ? "bg-purple-100 text-purple-600" : "bg-green-100 text-green-600"
                       )}>
-                        {u.is_system_owner ? '👑 System Owner' : u.role === 'Owner' ? '🟦 Owner' : '🟩 Admin'}
+                        {u?.is_system_owner ? '👑 System Owner' : u?.role === 'Owner' ? '🟦 Owner' : '🟩 Admin'}
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      {formatStatus(u.status)}
+                      {formatStatus(u?.status)}
                     </td>
                     <td className="px-5 py-3">
                       <div className="text-[10px] text-slate-500">
                         <div className="font-bold uppercase text-slate-400 mb-0.5">Dibuat Pada:</div>
-                        {u.created_at ? formatTanggal(u.created_at) : '-'}
+                        {u?.created_at ? formatTanggal(u.created_at) : '-'}
                         <div className="font-bold uppercase text-slate-400 mt-1 mb-0.5">Dibuat Oleh:</div>
-                        {u.created_by || '-'}
+                        {u?.created_by || '-'}
                       </div>
                     </td>
                     <td className="px-5 py-3 text-right">
@@ -686,26 +717,26 @@ export default function PengaturanPage() {
                           <Eye size={14} />
                         </button>
                         <button 
-                          onClick={() => setEditingUser({...u, password: ''})}
+                          onClick={() => setEditingUser({ ...u, password: '' })}
                           className="p-1.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
                           title="Edit User"
-                          disabled={!user?.is_system_owner && u.role === 'Owner' && u.id !== user?.id}
+                          disabled={!user?.is_system_owner && u?.role === 'Owner' && u?.id !== user?.id}
                         >
                           <Edit2 size={14} />
                         </button>
-                        {(!u.is_system_owner) && (!(!user?.is_system_owner && u.role === 'Owner')) && (
+                        {(!u?.is_system_owner) && (!(!user?.is_system_owner && u?.role === 'Owner')) && (
                           <>
                             <button 
-                              onClick={() => handleToggleStatus(u.id, u.status)}
+                              onClick={() => handleToggleStatus(u?.id, u?.status)}
                               className={cn(
                                 "p-1.5 rounded-lg transition-colors",
-                                u.status === 'Aktif' 
+                                u?.status === 'Aktif' 
                                   ? "hover:bg-amber-50 text-slate-400 hover:text-amber-600" 
                                   : "hover:bg-green-50 text-slate-400 hover:text-green-600"
                               )}
-                              title={u.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                              title={u?.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
                             >
-                              {u.status === 'Aktif' ? <PowerOff size={14} /> : <Power size={14} />}
+                              {u?.status === 'Aktif' ? <PowerOff size={14} /> : <Power size={14} />}
                             </button>
                             <button 
                               onClick={() => {
@@ -836,23 +867,23 @@ export default function PengaturanPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {logs.length === 0 ? (
+                {(logs || []).length === 0 ? (
                   <tr>
                     <td colSpan={3} className="px-5 py-8 text-center text-slate-500">
                       Tidak ada data log aktivitas.
                     </td>
                   </tr>
-                ) : logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                ) : (logs || []).map((log) => (
+                  <tr key={log?.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3">
-                      <div className="text-slate-900 font-medium">{formatTanggal(log.created_at)}</div>
+                      <div className="text-slate-900 font-medium">{formatTanggal(log?.created_at)}</div>
                       <div className="text-[10px] text-slate-400 font-mono" suppressHydrationWarning>
-                        {formatJam(log.created_at)}
+                        {formatJam(log?.created_at)}
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="text-slate-700 font-semibold uppercase text-[10px] tracking-wider">{log.aktivitas}</div>
-                      <div className="text-[10px] text-slate-500 uppercase">{log.nama_tabel} - {log.user_nama}</div>
+                      <div className="text-slate-700 font-semibold uppercase text-[10px] tracking-wider">{log?.aktivitas || '-'}</div>
+                      <div className="text-[10px] text-slate-500 uppercase">{log?.nama_tabel || log?.tabel || '-'} - {log?.user_nama || '-'}</div>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <button 
@@ -960,7 +991,7 @@ export default function PengaturanPage() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-red-900">Konfirmasi Hapus Permanen</h3>
-                <p className="text-sm text-red-700/80">Hapus permanen untuk user {showDeleteConfirm.nama}</p>
+                <p className="text-sm text-red-700/80">Hapus permanen untuk user {showDeleteConfirm?.nama || '-'}</p>
               </div>
             </div>
             <div className="p-6 space-y-4">
@@ -1016,7 +1047,7 @@ export default function PengaturanPage() {
                 <input 
                   required
                   type="text" 
-                  value={editingUser.nama}
+                  value={editingUser?.nama || ''}
                   onChange={(e) => setEditingUser({...editingUser, nama: e.target.value})}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
@@ -1026,7 +1057,7 @@ export default function PengaturanPage() {
                 <input 
                   disabled
                   type="email" 
-                  value={editingUser.email}
+                  value={editingUser?.email || ''}
                   className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed outline-none"
                 />
               </div>
@@ -1035,7 +1066,7 @@ export default function PengaturanPage() {
                 <input 
                   type="password" 
                   placeholder="********"
-                  value={editingUser.password}
+                  value={editingUser?.password || ''}
                   onChange={(e) => setEditingUser({...editingUser, password: e.target.value})}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
@@ -1044,9 +1075,9 @@ export default function PengaturanPage() {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase">Role</label>
                   <select 
-                    value={editingUser.role}
+                    value={editingUser?.role || 'Admin'}
                     onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
-                    disabled={editingUser.is_system_owner || (!user?.is_system_owner && editingUser.role === 'Owner')}
+                    disabled={editingUser?.is_system_owner || (!user?.is_system_owner && editingUser?.role === 'Owner')}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="Owner">Owner</option>
@@ -1056,9 +1087,9 @@ export default function PengaturanPage() {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase">Status</label>
                   <select 
-                    value={editingUser.status}
+                    value={editingUser?.status || 'Aktif'}
                     onChange={(e) => setEditingUser({...editingUser, status: e.target.value})}
-                    disabled={editingUser.is_system_owner}
+                    disabled={editingUser?.is_system_owner}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="Aktif">Aktif</option>
@@ -1102,7 +1133,7 @@ export default function PengaturanPage() {
                 <input 
                   disabled
                   type="text" 
-                  value={editingTarif.kode_unit}
+                  value={editingTarif?.kode_unit || ''}
                   className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed outline-none"
                 />
               </div>
@@ -1113,8 +1144,8 @@ export default function PengaturanPage() {
                   <input 
                     required
                     type="number" 
-                    value={editingTarif.harga_sewa}
-                    onChange={(e) => setEditingTarif({...editingTarif, harga_sewa: parseInt(e.target.value)})}
+                    value={editingTarif?.harga_sewa ?? ''}
+                    onChange={(e) => setEditingTarif({...editingTarif, harga_sewa: parseInt(e.target.value) || 0})}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600"
                   />
                 </div>
@@ -1147,11 +1178,11 @@ export default function PengaturanPage() {
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-100">
-                  {viewingUser.nama?.charAt(0).toUpperCase() || 'U'}
+                  {(viewingUser?.nama || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">{viewingUser.nama}</h3>
-                  <p className="text-sm text-slate-500">{viewingUser.email}</p>
+                  <h3 className="text-xl font-bold text-slate-900">{viewingUser?.nama || '-'}</h3>
+                  <p className="text-sm text-slate-500">{viewingUser?.email || '-'}</p>
                 </div>
               </div>
               <button onClick={() => setViewingUser(null)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -1164,19 +1195,19 @@ export default function PengaturanPage() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Role</div>
-                  <div className="font-bold text-slate-700">{viewingUser.role}</div>
+                  <div className="font-bold text-slate-700">{viewingUser?.role || '-'}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Status</div>
-                  <div>{formatStatus(viewingUser.status)}</div>
+                  <div>{formatStatus(viewingUser?.status)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dibuat Pada</div>
-                  <div className="text-slate-700 font-medium">{viewingUser.created_at ? formatTanggal(viewingUser.created_at) : '-'}</div>
+                  <div className="text-slate-700 font-medium">{viewingUser?.created_at ? formatTanggal(viewingUser.created_at) : '-'}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dibuat Oleh</div>
-                  <div className="text-slate-700 font-medium">{viewingUser.created_by || '-'}</div>
+                  <div className="text-slate-700 font-medium">{viewingUser?.created_by || '-'}</div>
                 </div>
               </div>
 
@@ -1194,25 +1225,25 @@ export default function PengaturanPage() {
                     <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
                     <p className="text-xs font-medium">Memuat aktivitas...</p>
                   </div>
-                ) : userActivities.length > 0 ? (
+                ) : (userActivities || []).length > 0 ? (
                   <div className="space-y-4">
-                    {userActivities.map((log) => (
-                      <div key={log.id} className="flex gap-4 group">
+                    {(userActivities || []).map((log) => (
+                      <div key={log?.id} className="flex gap-4 group">
                         <div className="flex flex-col items-center">
                           <div className="w-2.5 h-2.5 rounded-full bg-slate-300 mt-2 group-hover:bg-blue-500 transition-colors border-2 border-white ring-2 ring-slate-100 group-hover:ring-blue-100"></div>
                           <div className="w-px flex-1 bg-slate-100 my-1 group-hover:bg-blue-100 transition-colors"></div>
                         </div>
                         <div className="flex-1 pb-4">
                           <div className="text-[10px] text-slate-400 font-medium" suppressHydrationWarning>
-                            {formatTanggal(log.created_at)} {formatJam(log.created_at)}
+                            {formatTanggal(log?.created_at)} {formatJam(log?.created_at)}
                           </div>
-                          <div className="font-bold text-slate-800 text-sm mt-0.5 uppercase tracking-wide">{log.aktivitas}</div>
+                          <div className="font-bold text-slate-800 text-sm mt-0.5 uppercase tracking-wide">{log?.aktivitas || '-'}</div>
                           <div className="flex items-center gap-2 mt-1.5">
                             <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-bold uppercase tracking-tighter">
-                              {log.nama_tabel}
+                              {log?.nama_tabel || log?.tabel || '-'}
                             </span>
                             <span className="text-xs text-slate-400 truncate max-w-[200px] font-mono">
-                              ID: {log.id_data}
+                              ID: {log?.id_data || '-'}
                             </span>
                           </div>
                         </div>
@@ -1251,19 +1282,19 @@ export default function PengaturanPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Aktivitas</div>
-                  <div className="font-bold text-slate-800">{showLogDetail.aktivitas}</div>
+                  <div className="font-bold text-slate-800">{showLogDetail?.aktivitas || '-'}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Waktu</div>
-                  <div className="font-bold text-slate-800">{formatDateTime(showLogDetail.created_at)}</div>
+                  <div className="font-bold text-slate-800">{formatDateTime(showLogDetail?.created_at)}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">User</div>
-                  <div className="font-bold text-slate-800">{showLogDetail.user_nama} ({showLogDetail.user_role})</div>
+                  <div className="font-bold text-slate-800">{showLogDetail?.user_nama || '-'} ({showLogDetail?.user_role || '-'})</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">Target</div>
-                  <div className="font-bold text-slate-800">{showLogDetail.tabel} ID: {showLogDetail.id_data}</div>
+                  <div className="font-bold text-slate-800">{showLogDetail?.nama_tabel || showLogDetail?.tabel || '-'} ID: {showLogDetail?.id_data || '-'}</div>
                 </div>
               </div>
 
@@ -1271,13 +1302,13 @@ export default function PengaturanPage() {
                 <div>
                   <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Data Lama</h4>
                   <pre className="p-4 bg-slate-900 text-slate-300 rounded-xl text-[10px] overflow-auto max-h-48 font-mono">
-                    {JSON.stringify(showLogDetail.data_lama, null, 2) || 'None'}
+                    {JSON.stringify(showLogDetail?.data_lama ?? null, null, 2)}
                   </pre>
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Data Baru</h4>
                   <pre className="p-4 bg-slate-900 text-slate-300 rounded-xl text-[10px] overflow-auto max-h-48 font-mono">
-                    {JSON.stringify(showLogDetail.data_baru, null, 2) || 'None'}
+                    {JSON.stringify(showLogDetail?.data_baru ?? null, null, 2)}
                   </pre>
                 </div>
               </div>
@@ -1286,5 +1317,13 @@ export default function PengaturanPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PengaturanPage() {
+  return (
+    <ErrorBoundary>
+      <PengaturanContent />
+    </ErrorBoundary>
   );
 }
