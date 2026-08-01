@@ -254,7 +254,9 @@ export default function PembayaranPage() {
                       <div className="text-sm text-gray-900">{p.kontrak_sewa?.penyewa?.nama || p.penyewa?.nama || '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
-                      {p.kontrak_sewa?.unit?.kode_unit || '-'}
+                      {p.kontrak_sewa?.unit?.kode_unit || 
+                       p.alokasi_pembayaran?.[0]?.tagihan?.kontrak_sewa?.unit?.kode_unit || 
+                       '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatTanggal(p.tanggal_bayar)}
