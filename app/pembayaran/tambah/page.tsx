@@ -25,6 +25,7 @@ export default function TambahPembayaranFIFO() {
   
   const [formData, setFormData] = useState({
     id_penyewa: '',
+    id_kontrak: '',
     tanggal_bayar: new Date().toISOString().split('T')[0],
     periode: (new Date().getMonth() + 1).toString().padStart(2, '0') + '-' + new Date().getFullYear(),
     nominal: '',
@@ -48,10 +49,19 @@ export default function TambahPembayaranFIFO() {
   };
 
   const handlePenyewaChange = async (id: string) => {
-    setFormData(prev => ({ ...prev, id_penyewa: id }));
-    if (id) {
+    const selectedPenyewa = penyewaList.find(p => p.id_penyewa === id);
+    setFormData(prev => ({ ...prev, id_penyewa: id, id_kontrak: '' }));
+    if (id && selectedPenyewa) {
       try {
         setLoadingTagihan(true);
+        // Find active contract
+        const resKontrak = await apiFetch(`/api/kontrak?status=Aktif&search=${encodeURIComponent(selectedPenyewa.nama)}`);
+        const jsonKontrak = await resKontrak.json();
+        const activeContract = jsonKontrak.data?.find((k: any) => k.penyewa?.id_penyewa === id);
+        if (activeContract) {
+            setFormData(prev => ({ ...prev, id_kontrak: activeContract.id_kontrak }));
+        }
+
         const res = await apiFetch(`/api/tagihan?id_penyewa=${id}&status=Belum Bayar`);
         const data = await res.json();
         // Also fetch 'Sebagian'
@@ -93,8 +103,8 @@ export default function TambahPembayaranFIFO() {
     // Debug log for payload audit
     console.log('Submitting Payment Payload:', formData);
 
-    if (!formData.id_penyewa || !formData.nominal || !formData.periode) {
-      alert('Mohon lengkapi data wajib: Penyewa, Nominal, dan Periode');
+    if (!formData.id_penyewa || !formData.id_kontrak || !formData.nominal || !formData.periode) {
+      alert('Mohon lengkapi data wajib: Penyewa, Kontrak, Nominal, dan Periode');
       return;
     }
 

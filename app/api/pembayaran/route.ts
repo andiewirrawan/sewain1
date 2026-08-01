@@ -81,14 +81,14 @@ export async function POST(req: NextRequest) {
       periode 
     } = body;
 
-    if (!id_penyewa || !tanggal_bayar || nominal === undefined || !metode_pembayaran || !periode) {
-      return NextResponse.json({ message: 'Field wajib diisi: Penyewa, Tanggal Bayar, Nominal, Metode, Periode' }, { status: 400 });
+    if (!id_penyewa || !tanggal_bayar || nominal === undefined || !metode_pembayaran || !periode || !id_kontrak) {
+      return NextResponse.json({ message: 'Field wajib diisi: Penyewa, Tanggal Bayar, Nominal, Metode, Periode, dan Kontrak' }, { status: 400 });
     }
 
     // Call PostgreSQL Function (RPC) for safe, transactional FIFO payment
     const { data, error } = await supabaseAdmin.rpc('proses_pembayaran_fifo', {
       p_id_penyewa: id_penyewa,
-      p_id_kontrak: id_kontrak || null,
+      p_id_kontrak: id_kontrak,
       p_periode: periode,
       p_tanggal_bayar: tanggal_bayar,
       p_nominal: parseFloat(nominal),
