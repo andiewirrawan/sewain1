@@ -8,8 +8,13 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   
   if (!token && url.startsWith('/api/') && !url.startsWith('/api/login')) {
     // If no token and it's a protected API route, redirect to login
-    window.location.href = '/login';
-    throw new Error('No authentication token found. Redirecting to login.');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    return new Response(JSON.stringify({ message: 'Belum login. Mengalihkan ke halaman login.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const headers = new Headers(options.headers || {});
@@ -33,8 +38,10 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   if (response.status === 401) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
-    throw new Error('Sesi anda telah habis. Silakan login kembali.');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    return response;
   }
 
   if (response.status === 403) {

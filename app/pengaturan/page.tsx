@@ -808,7 +808,7 @@ function PengaturanContent() {
               </div>
               <h2 className="font-bold text-slate-800">Ekspor & Backup</h2>
             </div>
-            <p className="text-sm text-slate-500 mb-6">Unduh seluruh data aplikasi (Unit, Penyewa, Kontrak, Pembayaran) dalam format JSON untuk cadangan.</p>
+            <p className="text-sm text-slate-500 mb-6">Unduh seluruh data aplikasi (Unit, Penyewa, Kontrak, Tagihan, Pembayaran, Promo, Riwayat Generate) dalam format JSON untuk cadangan.</p>
             <button 
               onClick={handleBackup}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
@@ -825,7 +825,7 @@ function PengaturanContent() {
               </div>
               <h2 className="font-bold text-red-800">Zona Bahaya</h2>
             </div>
-            <p className="text-sm text-red-600/80 mb-6 font-medium">Reset akan menghapus seluruh data Unit, Penyewa, Kontrak, dan Pembayaran secara permanen.</p>
+            <p className="text-sm text-red-600/80 mb-6 font-medium">Reset akan menghapus seluruh data Unit, Penyewa, Kontrak, Tagihan, Pembayaran, Promo, Riwayat Generate, dan Log WA secara permanen.</p>
             
             <div className="space-y-3">
               <label className="text-[10px] uppercase font-bold text-red-700 block tracking-widest">Ketik &quot;HAPUS SEMUA DATA&quot; untuk konfirmasi</label>

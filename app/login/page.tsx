@@ -108,6 +108,32 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 text-center">Quick Demo Accounts</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('admin@sewain.com');
+                      setPassword('admin123');
+                    }}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-xs font-semibold text-slate-600 transition-colors text-center"
+                  >
+                    System Owner
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('owner@sewain.com');
+                      setPassword('owner123');
+                    }}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-purple-50 hover:text-purple-600 rounded-lg text-xs font-semibold text-slate-600 transition-colors text-center"
+                  >
+                    Owner
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
           

@@ -6,12 +6,24 @@ export async function GET(request: Request) {
   const user = await getUserFromRequest(request as any);
   if (!user || !requireRole(user, ['Owner'])) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-  const tables = ['unit', 'penyewa', 'kontrak_sewa', 'pembayaran'];
+  const tables = [
+    'unit', 
+    'penyewa', 
+    'kontrak_sewa', 
+    'tagihan', 
+    'pembayaran', 
+    'alokasi_pembayaran', 
+    'promo', 
+    'promo_penyewa', 
+    'riwayat_generate_tagihan', 
+    'log_wa_tagihan',
+    'pengaturan_aplikasi'
+  ];
   const backup: any = {};
 
   for (const table of tables) {
     const { data } = await supabase.from(table).select('*');
-    backup[table] = data;
+    backup[table] = data || [];
   }
 
   return new NextResponse(JSON.stringify(backup, null, 2), {
